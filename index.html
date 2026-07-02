@@ -188,6 +188,7 @@
     body.touch #pulsebtn { display: flex; }
     body.touch #touchui { display: flex; }
     body.touch #mutehint { display: none; }
+    body.touch #crt { display: none; }
     body.touch #powerbar { bottom: calc(102px + env(safe-area-inset-bottom)); }
 
     /* ---------- Small screens ---------- */
@@ -244,7 +245,7 @@
             <h1>MIRROR CAT</h1>
             <p class="cyan" style="font-size:9px">NEON ARCADE EDITION &#9733; DELUXE</p>
             <p class="rule">
-                YOU CONTROL <b class="gold">GOLD CAT</b> WITH THE MOUSE.<br>
+                <span id="ctrlRule">YOU CONTROL <b class="gold">GOLD CAT</b> WITH THE MOUSE.</span><br>
                 <b class="cyan">MIRROR CAT</b> COPIES YOU... REVERSED.<br>
                 EAT ONLY YOUR OWN COLOR!<br>
                 <b class="pink">WRONG SNACK = LOSE A LIFE</b> &nbsp;
@@ -301,16 +302,24 @@ var pausedTag = document.getElementById('pausedTag');
 var isTouch = false;
 try { isTouch = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window; } catch (e) {}
 if (isTouch) document.body.className = 'touch';
-var FXQ = isTouch ? 0.5 : 1;            // glow/shadow quality multiplier
-var TOUCH_OFFSET = 72;                  // cat floats above the finger
+var FXQ = isTouch ? 0 : 1;              // glow/shadow quality multiplier (shadows off on mobile: huge fps win)
 
-var W = 0, H = 0, DPR = 1;
+var W = 0, H = 0, DPR = 1, CATR = 20, bgGrad = null, vigGrad = null;
 function resize() {
-    DPR = Math.min(window.devicePixelRatio || 1, isTouch ? 1.5 : 2);
+    DPR = Math.min(window.devicePixelRatio || 1, isTouch ? 1 : 2);
     W = window.innerWidth; H = window.innerHeight;
     canvas.width = W * DPR; canvas.height = H * DPR;
     canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    CATR = Math.min(W, H) < 700 && isTouch ? 13 : 20;
+    // cache per-frame gradients (building them every frame is slow on mobile)
+    bgGrad = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.7);
+    bgGrad.addColorStop(0, '#120b2e');
+    bgGrad.addColorStop(0.6, '#0a0520');
+    bgGrad.addColorStop(1, '#04010d');
+    vigGrad = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+    vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+    vigGrad.addColorStop(1, 'rgba(0,0,0,0.45)');
 }
 window.addEventListener('resize', resize);
 resize();
@@ -388,24 +397,29 @@ function musicTick() {
 // ============================== INPUT ==============================
 window.addEventListener('mousemove', function(e) { mouse.x = e.clientX; mouse.y = e.clientY; });
 
-// touch steering: cat floats above the finger so it's never hidden under it
-function setTouchTarget(t) {
-    mouse.x = Math.max(10, Math.min(W - 10, t.clientX));
-    mouse.y = Math.max(10, Math.min(H - 10, t.clientY - TOUCH_OFFSET));
-}
-window.addEventListener('touchmove', function(e) {
-    e.preventDefault();
-    setTouchTarget(e.touches[0]);
-}, { passive: false });
+// touch steering: relative (trackpad-style) — the cat moves by how far the
+// finger travels, not to where it lands, so lifting and re-placing the thumb
+// leaves the cat exactly where it was
+var TOUCH_SENS = 1.4;
+var lastTouch = null;
 window.addEventListener('touchstart', function(e) {
     if (e.target.closest && e.target.closest('#pulsebtn,#touchui,button')) return;
-    var ox = mouse.x, oy = mouse.y;
-    setTouchTarget(e.touches[0]);
-    // big jump to a new spot? grant brief spawn protection so the dash
-    // across the screen (and its mirror) can't cause an unfair death
-    var jdx = mouse.x - ox, jdy = mouse.y - oy;
-    if (state === 'playing' && jdx * jdx + jdy * jdy > 150 * 150) grace = 45;
+    var t = e.touches[0];
+    lastTouch = { id: t.identifier, x: t.clientX, y: t.clientY };
 }, { passive: true });
+window.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    var t = e.touches[0];
+    if (!lastTouch || lastTouch.id !== t.identifier) {
+        lastTouch = { id: t.identifier, x: t.clientX, y: t.clientY };
+        return;
+    }
+    mouse.x = Math.max(10, Math.min(W - 10, mouse.x + (t.clientX - lastTouch.x) * TOUCH_SENS));
+    mouse.y = Math.max(10, Math.min(H - 10, mouse.y + (t.clientY - lastTouch.y) * TOUCH_SENS));
+    lastTouch.x = t.clientX; lastTouch.y = t.clientY;
+}, { passive: false });
+window.addEventListener('touchend', function() { lastTouch = null; });
+window.addEventListener('touchcancel', function() { lastTouch = null; });
 
 window.addEventListener('mousedown', function() { if (!isTouch) firePulse(); });
 window.addEventListener('keydown', function(e) {
@@ -444,6 +458,7 @@ onTap(mutebtnEl, toggleMute);
 
 if (isTouch) {
     document.getElementById('pulseHint').textContent = 'PULSE BUTTON';
+    document.getElementById('ctrlRule').innerHTML = 'DRAG ANYWHERE TO STEER <b class="gold">GOLD CAT</b>.';
     document.querySelector('#pausedTag small').textContent = 'TAP ▶ TO RESUME';
 }
 
@@ -555,6 +570,7 @@ function startGame() {
     dots = []; particles = []; floaters = []; ripples = []; shooters = []; pulseWaves = [];
     shake = 0; flash = 0; slowmo = 0; shield = 0; magnet = 0; frenzy = 0; doubler = 0;
     pulseCooldown = 0; paused = false; musicStep = 0; grace = 0;
+    lastTime = 0; accum = 0;
     pausebtnEl.innerHTML = '&#10074;&#10074;';
     cat1.x = mouse.x; cat1.y = mouse.y; cat1.trail = [];
     cat2.x = W - mouse.x; cat2.y = H - mouse.y; cat2.trail = [];
@@ -717,37 +733,37 @@ function grabPowerup(d, x, y) {
 
 // ============================== DRAWING ==============================
 function drawBackground() {
-    var g = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.7);
-    if (frenzy > 0) {
+    if (frenzy > 0 && !isTouch) {
+        var g = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.7);
         var hue = (frame * 3) % 360;
         g.addColorStop(0, 'hsl(' + hue + ', 45%, 12%)');
         g.addColorStop(0.6, '#0a0520');
         g.addColorStop(1, '#04010d');
+        ctx.fillStyle = g;
     } else {
-        g.addColorStop(0, '#120b2e');
-        g.addColorStop(0.6, '#0a0520');
-        g.addColorStop(1, '#04010d');
+        ctx.fillStyle = bgGrad;
     }
-    ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
 
-    // aurora nebula blobs
-    ctx.globalCompositeOperation = 'lighter';
-    var n1x = W * (0.3 + 0.1 * Math.sin(frame * 0.003));
-    var n1y = H * (0.35 + 0.08 * Math.cos(frame * 0.004));
-    var ng = ctx.createRadialGradient(n1x, n1y, 0, n1x, n1y, 320);
-    ng.addColorStop(0, 'rgba(120,60,255,0.05)');
-    ng.addColorStop(1, 'rgba(120,60,255,0)');
-    ctx.fillStyle = ng;
-    ctx.fillRect(0, 0, W, H);
-    var n2x = W * (0.7 + 0.08 * Math.cos(frame * 0.0035));
-    var n2y = H * (0.6 + 0.1 * Math.sin(frame * 0.0025));
-    var ng2 = ctx.createRadialGradient(n2x, n2y, 0, n2x, n2y, 360);
-    ng2.addColorStop(0, 'rgba(0,180,220,0.045)');
-    ng2.addColorStop(1, 'rgba(0,180,220,0)');
-    ctx.fillStyle = ng2;
-    ctx.fillRect(0, 0, W, H);
-    ctx.globalCompositeOperation = 'source-over';
+    // aurora nebula blobs (skipped on mobile — per-frame gradients + 'lighter' compositing are slow there)
+    if (!isTouch) {
+        ctx.globalCompositeOperation = 'lighter';
+        var n1x = W * (0.3 + 0.1 * Math.sin(frame * 0.003));
+        var n1y = H * (0.35 + 0.08 * Math.cos(frame * 0.004));
+        var ng = ctx.createRadialGradient(n1x, n1y, 0, n1x, n1y, 320);
+        ng.addColorStop(0, 'rgba(120,60,255,0.05)');
+        ng.addColorStop(1, 'rgba(120,60,255,0)');
+        ctx.fillStyle = ng;
+        ctx.fillRect(0, 0, W, H);
+        var n2x = W * (0.7 + 0.08 * Math.cos(frame * 0.0035));
+        var n2y = H * (0.6 + 0.1 * Math.sin(frame * 0.0025));
+        var ng2 = ctx.createRadialGradient(n2x, n2y, 0, n2x, n2y, 360);
+        ng2.addColorStop(0, 'rgba(0,180,220,0.045)');
+        ng2.addColorStop(1, 'rgba(0,180,220,0)');
+        ctx.fillStyle = ng2;
+        ctx.fillRect(0, 0, W, H);
+        ctx.globalCompositeOperation = 'source-over';
+    }
 
     // twinkling stars
     for (var i = 0; i < stars.length; i++) {
@@ -796,7 +812,7 @@ function drawBackground() {
 }
 
 function drawCat(cat) {
-    var r = 20;
+    var r = CATR;
     var sq = cat.squash;
     var sx = 1 + sq * 0.25, sy = 1 - sq * 0.25;
     var speed = Math.sqrt(cat.vx * cat.vx + cat.vy * cat.vy);
@@ -1099,13 +1115,27 @@ function heartPath(cx, cy, s) {
 }
 
 // ============================== MAIN LOOP ==============================
-function gameLoop() {
+// Fixed 60Hz timestep: rAF fires at the display's refresh rate (60, 120,
+// 144Hz...) and browsers differ, so game logic runs on its own clock —
+// same speed on every browser, device, and frame rate.
+var timeScale = 1;
+var lastTime = 0, accum = 0, STEP = 1000 / 60;
+function gameLoop(now) {
     if (state !== 'playing') return;
     requestAnimationFrame(gameLoop);
-    if (paused) return;
+    if (now === undefined) now = performance.now();
+    if (paused) { lastTime = now; return; }
+    if (!lastTime) lastTime = now;
+    accum += now - lastTime; lastTime = now;
+    if (accum > 100) accum = 100; // cap catch-up after tab switches / long frames
+    var stepped = false;
+    while (accum >= STEP) { tick(); accum -= STEP; stepped = true; }
+    if (stepped) render();
+}
 
+function tick() {
     frame++;
-    var timeScale = slowmo > 0 ? 0.45 : 1;
+    timeScale = slowmo > 0 ? 0.45 : 1;
     if (slowmo > 0) slowmo--;
     if (magnet > 0) magnet--;
     if (frenzy > 0) frenzy--;
@@ -1123,8 +1153,8 @@ function gameLoop() {
     if (frame % 600 === 0 && frame > 0) spawnPowerup();
     if (level >= 2 && frame % Math.max(240, 560 - level * 40) === 0) spawnBomb();
 
-    // --- cats ---
-    var lf = 0.16;
+    // --- cats --- (tighter follow on touch so the cat doesn't feel laggy)
+    var lf = isTouch ? 0.28 : 0.16;
     var ox1 = cat1.x, oy1 = cat1.y, ox2 = cat2.x, oy2 = cat2.y;
     cat1.x = lerp(cat1.x, mouse.x, lf);
     cat1.y = lerp(cat1.y, mouse.y, lf);
@@ -1135,7 +1165,7 @@ function gameLoop() {
 
     [cat1, cat2].forEach(function(cat) {
         cat.trail.push({ x: cat.x, y: cat.y });
-        if (cat.trail.length > 12) cat.trail.shift();
+        if (cat.trail.length > (isTouch ? 7 : 12)) cat.trail.shift();
         cat.squash = Math.max(0, cat.squash - 0.08);
         if (cat.blink > 0) cat.blink--;
         else if (Math.random() < 0.004) cat.blink = 8;
@@ -1182,7 +1212,8 @@ function gameLoop() {
         for (var c = 0; c < 2 && !consumed; c++) {
             var cat = cats[c];
             var dx = cat.x - d.x, dy = cat.y - d.y;
-            if (dx * dx + dy * dy < 30 * 30) {
+            var er = CATR + 10;
+            if (dx * dx + dy * dy < er * er) {
                 var harmful = d.type === 'bomb' ||
                               (d.type === 'food' && frenzy <= 0 && cat.color !== d.color);
                 if (grace > 0 && harmful) continue; // spawn protection: pass through
@@ -1203,8 +1234,10 @@ function gameLoop() {
         combofillEl.style.width = (comboTimer / 150 * 100) + '%';
         if (comboTimer === 0) { combo = 0; comboEl.className = ''; combobarEl.className = ''; }
     }
+}
 
-    // ============ RENDER ============
+// ============ RENDER ============
+function render() {
     ctx.save();
     if (shake > 0) {
         ctx.translate(rand(-shake, shake) * 0.6, rand(-shake, shake) * 0.6);
@@ -1310,10 +1343,7 @@ function gameLoop() {
     ctx.restore();
 
     // vignette
-    var vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
-    vg.addColorStop(0, 'rgba(0,0,0,0)');
-    vg.addColorStop(1, 'rgba(0,0,0,0.45)');
-    ctx.fillStyle = vg;
+    ctx.fillStyle = vigGrad;
     ctx.fillRect(0, 0, W, H);
 
     // --- HUD power tags ---
