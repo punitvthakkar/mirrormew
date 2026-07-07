@@ -115,7 +115,12 @@
     .panel h1 {
         margin: 0 0 8px; font-size: 30px; color: #ffd23f;
         text-shadow: 0 0 14px #ffd23f, 0 0 40px #ff8a00;
-        animation: titleGlow 1.6s ease-in-out infinite alternate;
+        animation: titleGlow 1.6s ease-in-out infinite alternate,
+                   titleFloat 3.2s ease-in-out infinite;
+    }
+    @keyframes titleFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-6px); }
     }
     @keyframes titleGlow {
         from { text-shadow: 0 0 10px #ffd23f, 0 0 30px #ff8a00; }
@@ -252,6 +257,10 @@
                 <b class="red">&#10041; BOMB = DODGE IT!</b><br>
                 <b class="orange" id="pulseHint">CLICK</b> = SHOCKWAVE PULSE (KNOCKS DOTS AWAY)
             </p>
+            <p class="rule" style="font-size:9px">
+                <b class="cyan">MIRROR SYNC</b>: BOTH CATS EAT TOGETHER = BONUS!<br>
+                <b class="red">GRAZE</b>: SKIM PAST BOMBS FOR EXTRA POINTS
+            </p>
             <div class="powgrid">
                 <span><b class="gold">&#9733; STAR</b> +5 PTS</span>
                 <span><b class="pink">&#10084; HEART</b> EXTRA LIFE</span>
@@ -344,6 +353,10 @@ var slowmo = 0, shield = 0, magnet = 0, frenzy = 0, doubler = 0;
 var pulseCooldown = 0, pulseWaves = [];
 var paused = false, muted = false;
 var grace = 0; // spawn-protection frames after a big touch jump
+var freezeFrames = 0;                 // hit-stop: world freezes for a beat on impact
+var lastEatFrame = { gold: -999, silver: -999 }; // for MIRROR SYNC bonus
+var beamTimer = 0;                    // cats linked by light beam after a sync
+var grazes = 0;                       // near-miss count (stats)
 
 // starfield background (fewer on mobile for perf)
 for (var s = 0; s < (isTouch ? 50 : 90); s++) {
@@ -377,6 +390,26 @@ function sfxOver()   { [392,330,262,196].forEach(function(f,i){ setTimeout(funct
 function sfxShield() { beep(660, 0.2, 'sine', 0.12, 330); }
 function sfxPulse()  { beep(180, 0.25, 'sine', 0.14, 60); beep(90, 0.3, 'triangle', 0.1, 40); }
 function sfxFrenzy() { [660,880,1100,1320,1100,880].forEach(function(f,i){ setTimeout(function(){ beep(f, 0.08, 'square', 0.06); }, i*55); }); }
+function sfxGraze()  { beep(1600, 0.06, 'sine', 0.07, 2200); }
+function sfxMirror() { beep(880, 0.09, 'triangle', 0.1, 1320); setTimeout(function(){ beep(1320, 0.12, 'triangle', 0.09, 1760); }, 70); }
+
+// noise burst for percussion (hat / kick body)
+function noiseHit(dur, vol, hipass) {
+    var ac = audio(); if (!ac) return;
+    var len = Math.floor(ac.sampleRate * dur);
+    var buf = ac.createBuffer(1, len, ac.sampleRate);
+    var data = buf.getChannelData(0);
+    for (var i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    var src = ac.createBufferSource(); src.buffer = buf;
+    var flt = ac.createBiquadFilter();
+    flt.type = hipass ? 'highpass' : 'lowpass';
+    flt.frequency.value = hipass ? 6000 : 300;
+    var g = ac.createGain();
+    g.gain.setValueAtTime(vol, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur);
+    src.connect(flt); flt.connect(g); g.connect(ac.destination);
+    src.start();
+}
 
 // --------- tiny procedural soundtrack (chiptune bassline + arp) ---------
 var SCALE = [0, 3, 5, 7, 10, 12, 15, 19];          // minor pentatonic-ish
@@ -387,9 +420,17 @@ function musicTick() {
     var root = 55; // A1
     var bass = BASSLINE[musicStep % BASSLINE.length];
     beep(root * Math.pow(2, bass / 12), 0.18, 'triangle', 0.045);
+    // percussion: kick on the downbeat, hats on offbeats (builds with level)
+    if (musicStep % 4 === 0) beep(110, 0.1, 'sine', 0.09, 35);
+    if (musicStep % 2 === 1 && (level >= 2 || frenzy > 0)) noiseHit(0.04, 0.025, true);
     if (musicStep % 2 === 0) {
         var n = SCALE[(musicStep * 3 + level) % SCALE.length];
         beep(root * 4 * Math.pow(2, n / 12), 0.1, 'square', frenzy > 0 ? 0.035 : 0.018);
+    }
+    // high combo: sparkling counter-melody an octave up
+    if (combo >= 8 && musicStep % 4 === 2) {
+        var n2 = SCALE[(musicStep * 5 + combo) % SCALE.length];
+        beep(root * 8 * Math.pow(2, n2 / 12), 0.07, 'sine', 0.02);
     }
     musicStep++;
 }
@@ -558,7 +599,9 @@ function spawnBomb() {
     dots.push({
         x: x, y: y, r: 0, targetR: 13, born: frame, life: 540,
         vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-        type: 'bomb', phase: Math.random() * Math.PI * 2
+        type: 'bomb', phase: Math.random() * Math.PI * 2,
+        // seekers slowly hunt the nearest cat from level 5 up — pulse them away!
+        homing: level >= 5 && Math.random() < 0.35
     });
 }
 
@@ -570,6 +613,8 @@ function startGame() {
     dots = []; particles = []; floaters = []; ripples = []; shooters = []; pulseWaves = [];
     shake = 0; flash = 0; slowmo = 0; shield = 0; magnet = 0; frenzy = 0; doubler = 0;
     pulseCooldown = 0; paused = false; musicStep = 0; grace = 0;
+    freezeFrames = 0; beamTimer = 0; grazes = 0;
+    lastEatFrame.gold = -999; lastEatFrame.silver = -999;
     lastTime = 0; accum = 0;
     pausebtnEl.innerHTML = '&#10074;&#10074;';
     cat1.x = mouse.x; cat1.y = mouse.y; cat1.trail = [];
@@ -610,6 +655,7 @@ function loseLife(x, y) {
     comboEl.className = ''; combobarEl.className = '';
     updateLives();
     sfxHurt();
+    freezeFrames = 10; // dramatic hit-stop on damage
     shake = 18; flash = 0.55; flashColor = '255,60,90';
     burst(x, y, '#ff3355', 36, 8);
     floater(x, y, 'OUCH!', '#ff3355');
@@ -641,6 +687,8 @@ function endGame() {
         'BEST COMBO: <span class="pink">x' + bestCombo + '</span><br>' +
         'POWER-UPS: <span class="orange">' + powerups + '</span> &nbsp; ' +
         'LEVEL: <span class="green">' + level + '</span><br>' +
+        'GRAZES: <span class="red">' + grazes + '</span> &nbsp; ' +
+        'BOMBS DODGED: <span class="cyan">' + bombsDodged + '</span><br>' +
         'SURVIVED: <span class="cyan">' + Math.floor(secs / 60) + 'M ' + (secs % 60) + 'S</span>';
     var rk = rankFor(score);
     rankLineEl.innerHTML = 'RANK: <span style="color:' + rk[1] + ';text-shadow:0 0 10px ' + rk[1] + '">' + rk[0] + '</span>';
@@ -667,9 +715,25 @@ function eat(cat, d, mult) {
     }
     sfxEat(combo);
     cat.squash = 1;
+    freezeFrames = Math.max(freezeFrames, 2); // micro hit-stop: makes every bite feel punchy
     burst(d.x, d.y, d.color || '#fff', 14, 5);
     floater(d.x, d.y, '+' + pts, d.color || '#fff');
     ripple(d.x, d.y, d.color || '#fff');
+
+    // MIRROR SYNC: both cats eat within half a second -> big bonus + light beam
+    var me = cat === cat1 ? 'gold' : 'silver';
+    var other = cat === cat1 ? 'silver' : 'gold';
+    lastEatFrame[me] = frame;
+    if (frame - lastEatFrame[other] < 30) {
+        lastEatFrame.gold = lastEatFrame.silver = -999;
+        var bonus = 10 * comboMult * (doubler > 0 ? 2 : 1);
+        score += bonus;
+        scoreEl.textContent = score;
+        beamTimer = 40;
+        sfxMirror();
+        floater((cat1.x + cat2.x) / 2, (cat1.y + cat2.y) / 2, 'MIRROR SYNC +' + bonus, '#00f6ff');
+        burst((cat1.x + cat2.x) / 2, (cat1.y + cat2.y) / 2, '#00f6ff', 20, 6);
+    }
 
     // live new-record celebration
     if (!recordShown && hiscore > 0 && score > hiscore) {
@@ -688,12 +752,23 @@ function eat(cat, d, mult) {
         flash = 0.35; flashColor = '88,255,177';
         banner('LEVEL ' + level, '#58ffb1');
         ripple(W / 2, H / 2, '#58ffb1');
+        // confetti rain from the top of the screen
+        var confetti = ['#ffd23f', '#ff4fd8', '#00f6ff', '#58ffb1', '#ff8a00'];
+        for (var ci = 0; ci < (isTouch ? 30 : 60); ci++) {
+            particles.push({
+                x: rand(0, W), y: rand(-40, 0),
+                vx: rand(-1.5, 1.5), vy: rand(1, 4),
+                life: 1, decay: rand(0.006, 0.014), size: rand(2.5, 5),
+                color: confetti[ci % confetti.length]
+            });
+        }
     }
 }
 
 function grabPowerup(d, x, y) {
     powerups++;
     sfxPower();
+    freezeFrames = Math.max(freezeFrames, 4);
     ripple(x, y, '#fff');
     if (d.type === 'star') {
         var pts = 5 * (doubler > 0 ? 2 : 1);
@@ -817,16 +892,18 @@ function drawCat(cat) {
     var sx = 1 + sq * 0.25, sy = 1 - sq * 0.25;
     var speed = Math.sqrt(cat.vx * cat.vx + cat.vy * cat.vy);
 
-    // trail
+    // trail (additive on desktop for a comet-like glow)
+    if (!isTouch) ctx.globalCompositeOperation = 'lighter';
     for (var i = 0; i < cat.trail.length; i++) {
         var t = cat.trail[i];
-        var a = (i / cat.trail.length) * 0.28;
+        var a = (i / cat.trail.length) * (isTouch ? 0.28 : 0.16);
         ctx.fillStyle = cat.color;
         ctx.globalAlpha = a;
         ctx.beginPath();
         ctx.arc(t.x, t.y, r * 0.7 * (i / cat.trail.length), 0, Math.PI * 2);
         ctx.fill();
     }
+    ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
 
     // tail: short tapered curl peeking from behind the head, gentle sway
@@ -1026,6 +1103,16 @@ function drawDot(d) {
         ctx.beginPath();
         ctx.arc(0, 0, d.r * pulse * 0.22, 0, Math.PI * 2);
         ctx.fill();
+        // seekers get a rotating targeting reticle so the threat reads instantly
+        if (d.homing) {
+            ctx.strokeStyle = 'rgba(255,51,85,' + (0.5 + 0.5 * warn) + ')';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 9]);
+            ctx.beginPath();
+            ctx.arc(0, 0, d.r * pulse * 1.9, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
     } else {
         ctx.rotate(frame * 0.03 + d.phase);
         var pc = d.type === 'star' ? '#ffd23f' : d.type === 'heart' ? '#ff4fd8'
@@ -1134,7 +1221,9 @@ function gameLoop(now) {
 }
 
 function tick() {
+    if (freezeFrames > 0) { freezeFrames--; return; } // hit-stop: freeze the world for a beat
     frame++;
+    if (beamTimer > 0) beamTimer--;
     timeScale = slowmo > 0 ? 0.45 : 1;
     if (slowmo > 0) slowmo--;
     if (magnet > 0) magnet--;
@@ -1189,6 +1278,20 @@ function tick() {
             }
         }
 
+        // seeker bombs drift toward the nearest cat (speed-capped so they stay dodgeable)
+        if (d.homing) {
+            var d1x = cat1.x - d.x, d1y = cat1.y - d.y;
+            var d2x = cat2.x - d.x, d2y = cat2.y - d.y;
+            var q1 = d1x * d1x + d1y * d1y, q2 = d2x * d2x + d2y * d2y;
+            var hx = q1 < q2 ? d1x : d2x, hy = q1 < q2 ? d1y : d2y;
+            var hd = Math.sqrt(Math.min(q1, q2)) || 1;
+            d.vx += (hx / hd) * 0.045;
+            d.vy += (hy / hd) * 0.045;
+            var hv = Math.sqrt(d.vx * d.vx + d.vy * d.vy);
+            var hmax = 1.7;
+            if (hv > hmax) { d.vx *= hmax / hv; d.vy *= hmax / hv; }
+        }
+
         d.x += d.vx * timeScale;
         d.y += d.vy * timeScale;
         // dampen pulse knockback
@@ -1213,7 +1316,19 @@ function tick() {
             var cat = cats[c];
             var dx = cat.x - d.x, dy = cat.y - d.y;
             var er = CATR + 10;
-            if (dx * dx + dy * dy < er * er) {
+            var dq = dx * dx + dy * dy;
+            // GRAZE: skim past a bomb without touching it -> risky-play reward
+            if (d.type === 'bomb' && !d.grazed && dq >= er * er && dq < (er + 26) * (er + 26)) {
+                d.grazed = true;
+                grazes++;
+                var gpts = 2 * (doubler > 0 ? 2 : 1);
+                score += gpts;
+                scoreEl.textContent = score;
+                sfxGraze();
+                floater(d.x, d.y, 'GRAZE +' + gpts, '#e8f4ff');
+                ripple(d.x, d.y, '#ff3355');
+            }
+            if (dq < er * er) {
                 var harmful = d.type === 'bomb' ||
                               (d.type === 'food' && frenzy <= 0 && cat.color !== d.color);
                 if (grace > 0 && harmful) continue; // spawn protection: pass through
@@ -1284,6 +1399,26 @@ function render() {
         ctx.globalAlpha = 1;
     }
 
+    // MIRROR SYNC beam: a fading light bridge between the two cats
+    if (beamTimer > 0) {
+        var ba = beamTimer / 40;
+        ctx.save();
+        if (!isTouch) ctx.globalCompositeOperation = 'lighter';
+        var bg = ctx.createLinearGradient(cat1.x, cat1.y, cat2.x, cat2.y);
+        bg.addColorStop(0, 'rgba(255,210,63,' + ba * 0.7 + ')');
+        bg.addColorStop(0.5, 'rgba(0,246,255,' + ba * 0.9 + ')');
+        bg.addColorStop(1, 'rgba(232,244,255,' + ba * 0.7 + ')');
+        ctx.strokeStyle = bg;
+        ctx.lineWidth = 2 + ba * 4;
+        ctx.shadowColor = '#00f6ff';
+        ctx.shadowBlur = 16 * FXQ;
+        ctx.beginPath();
+        ctx.moveTo(cat1.x, cat1.y);
+        ctx.lineTo(cat2.x, cat2.y);
+        ctx.stroke();
+        ctx.restore();
+    }
+
     dots.forEach(drawDot);
 
     // particles
@@ -1346,6 +1481,19 @@ function render() {
     ctx.fillStyle = vigGrad;
     ctx.fillRect(0, 0, W, H);
 
+    // combo heat: the screen border glows hotter as the combo climbs
+    if (combo >= 5 && state === 'playing') {
+        var heat = Math.min((combo - 4) / 16, 1);
+        var hcol = frenzy > 0 ? ((frame * 3) % 360) : 315 - heat * 40; // pink -> orange
+        ctx.save();
+        ctx.strokeStyle = 'hsla(' + hcol + ',95%,62%,' + (0.25 + heat * 0.4 + 0.12 * Math.sin(frame * 0.15)) + ')';
+        ctx.lineWidth = 3 + heat * 5;
+        ctx.shadowColor = 'hsl(' + hcol + ',95%,62%)';
+        ctx.shadowBlur = (18 + heat * 26) * FXQ;
+        ctx.strokeRect(2, 2, W - 4, H - 4);
+        ctx.restore();
+    }
+
     // --- HUD power tags ---
     var tags = '';
     if (slowmo > 0)  tags += '<div class="ptag" style="color:#00f6ff;border-color:#00f6ff">&#9200; SLOW-MO ' + Math.ceil(slowmo / 60) + 's</div>';
@@ -1369,11 +1517,27 @@ function render() {
     }
 }
 
-// idle menu animation behind start screen
+// idle menu animation behind start screen: the two cats chase each other
+// in a mirrored orbit so the core mechanic is visible before you even play
 (function menuLoop() {
     if (state === 'menu') {
         frame++;
         drawBackground();
+        var t = frame * 0.012;
+        var ox = Math.cos(t) * W * 0.32, oy = Math.sin(t * 1.7) * H * 0.3;
+        var nx1 = W / 2 + ox, ny1 = H / 2 + oy;
+        cat1.vx = nx1 - cat1.x; cat1.vy = ny1 - cat1.y;
+        cat1.x = nx1; cat1.y = ny1;
+        cat2.vx = -cat1.vx; cat2.vy = -cat1.vy;
+        cat2.x = W - nx1; cat2.y = H - ny1;
+        [cat1, cat2].forEach(function(cat) {
+            cat.trail.push({ x: cat.x, y: cat.y });
+            if (cat.trail.length > (isTouch ? 7 : 12)) cat.trail.shift();
+            if (cat.blink > 0) cat.blink--;
+            else if (Math.random() < 0.004) cat.blink = 8;
+        });
+        drawCat(cat2);
+        drawCat(cat1);
         requestAnimationFrame(menuLoop);
     }
 })();
