@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Mirror Mew</title>
+<title>Mirror Cat — Neon Arcade</title>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -180,6 +180,29 @@
     .protip { font-size: 8px; line-height: 1.9; color: #7f8fc0; margin: 18px 0 0; letter-spacing: 1px; }
     .protip b { font-size: 8px; }
 
+    /* ---------- Character select ---------- */
+    .choosehdr { font-size: 9px; letter-spacing: 3px; color: #ff4fd8; text-shadow: 0 0 8px rgba(255,79,216,.5); margin: 0 0 12px; }
+    .charrow { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .charcard {
+        cursor: pointer; width: 96px; padding: 8px 4px 7px;
+        border: 2px solid rgba(127,143,192,.35); border-radius: 8px;
+        background: rgba(255,255,255,.03); transition: border-color .15s, box-shadow .15s;
+    }
+    .charcard:hover { border-color: rgba(255,210,63,.6); }
+    .charcard.sel { border-color: #ffd23f; box-shadow: 0 0 16px rgba(255,210,63,.35); background: rgba(255,210,63,.06); }
+    .charcard canvas { width: 84px; height: 58px; display: block; margin: 0 auto; }
+    .charname { font-size: 8px; letter-spacing: 1px; color: #7f8fc0; margin-top: 6px; }
+    .charcard.sel .charname { color: #ffd23f; text-shadow: 0 0 6px rgba(255,210,63,.5); }
+    #charStory { font-size: 8px; line-height: 2; color: #9aa6c8; max-width: 430px; margin: 14px auto 0; min-height: 48px; letter-spacing: .5px; }
+    #charStory b { font-size: 9px; color: #ffd23f; text-shadow: 0 0 6px rgba(255,210,63,.4); letter-spacing: 2px; }
+    #charStory .ctitle { color: #00f6ff; letter-spacing: 1.5px; }
+    .modes button.mini {
+        border-color: rgba(127,143,192,.6); color: #bcd6ff;
+        text-shadow: none; box-shadow: none;
+    }
+    .modes button.mini:hover { background: rgba(127,143,192,.9); color: #05010f; box-shadow: 0 0 18px rgba(127,143,192,.5); }
+    #infoOverlay { z-index: 30; }
+
     /* game-over stats */
     .finalScore { margin: 6px 0 2px; }
     .finalScore .fs-label { font-size: 8px; color: #7f8fc0; letter-spacing: 3px; margin-bottom: 8px; }
@@ -320,10 +343,30 @@
 
     <div class="overlay show" id="startOverlay">
         <div class="panel">
-            <h1>MIRROR MEW</h1>
-            <p class="tagline">Feed Hungry Cats</p>
+            <h1>MIRROR CAT</h1>
+            <p class="tagline">NEON ARCADE EDITION</p>
             <p id="menuBest" style="font-size:9px;color:#ffd23f;text-shadow:0 0 8px rgba(255,210,63,.5);margin:10px 0 0;letter-spacing:2px;"></p>
             <div class="divider"></div>
+            <p class="choosehdr">CHOOSE YOUR CAT</p>
+            <div class="charrow">
+                <div class="charcard"><canvas></canvas><div class="charname">PIP</div></div>
+                <div class="charcard"><canvas></canvas><div class="charname">NOVA</div></div>
+                <div class="charcard"><canvas></canvas><div class="charname">MOCHI</div></div>
+                <div class="charcard"><canvas></canvas><div class="charname">BEAN</div></div>
+            </div>
+            <div id="charStory"></div>
+            <div class="divider"></div>
+            <div class="modes">
+                <button onclick="startGame('classic')">CLASSIC</button>
+                <button class="alt" onclick="startGame('sprint')">SPRINT 60s</button>
+                <button class="mini" onclick="toggleInfo(true)">&#9432; INFO</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="infoOverlay">
+        <div class="panel">
+            <h2>HOW TO PLAY</h2>
             <div class="rules">
                 <div class="rline"><span id="ctrlRule">MOVE THE MOUSE &mdash; <b class="gold">GOLD CAT</b> FOLLOWS.</span></div>
                 <div class="rline"><b class="cyan">MIRROR CAT</b> COPIES YOU, REVERSED.</div>
@@ -345,10 +388,8 @@
                 PRO &mdash; <b class="cyan">SYNC</b> BOTH CATS' BITES FOR A BONUS
                 &middot; <b class="red">GRAZE</b> BOMBS FOR POINTS
             </p>
-            <div class="modes">
-                <button onclick="startGame('classic')">CLASSIC</button>
-                <button class="alt" onclick="startGame('sprint')">SPRINT 60s</button>
-            </div>
+            <div class="divider"></div>
+            <button onclick="toggleInfo(false)">GOT IT</button>
         </div>
     </div>
 
@@ -442,8 +483,46 @@ function refreshMenuBest() {
 refreshMenuBest();
 
 var mouse = { x: W / 2, y: H / 2 };
-var cat1 = { x: W / 2, y: H / 2, color: GOLD, glow: '#ffb300', vx: 0, vy: 0, blink: 0, squash: 0, trail: [], wag: 0 };
-var cat2 = { x: W / 2, y: H / 2, color: SILVER, glow: '#00f6ff', vx: 0, vy: 0, blink: 0, squash: 0, trail: [], wag: Math.PI };
+var cat1 = { x: W / 2, y: H / 2, color: GOLD, glow: '#ffb300', vx: 0, vy: 0, blink: 0, squash: 0, trail: [], wag: 0, face: 1, stride: 0 };
+var cat2 = { x: W / 2, y: H / 2, color: SILVER, glow: '#00f6ff', vx: 0, vy: 0, blink: 0, squash: 0, trail: [], wag: Math.PI, face: -1, stride: 0.4 };
+
+// ============================== CHARACTERS ==============================
+// full-body cats with procedural walk/run gaits, phase-matched to real speed
+// phases: [near-front, far-front, near-hind, far-hind] leg offsets in cycles
+var GOLDPAL   = { body: '#ffd23f', dark: '#c9971f', glow: '#ffb300' };
+var SILVERPAL = { body: '#dfe7f2', dark: '#93a3bb', glow: '#00f6ff' };
+var SOURPAL   = { body: '#98a0b4', dark: '#6f7686', glow: '#6b7280' };
+var CHARACTERS = [
+{
+    name: 'PIP', title: 'THE BOBBLE TROTTER', scale: 0.95, pscale: 0.56,
+    story: 'Pip hatched out of a claw machine that never paid out, so one night the little cat simply walked through the glass and kept going. The head is full of confidence and the legs are doing their absolute best.',
+    p: { headR: 23, bodyW: 21, bodyH: 12, legLen: 15, legW: 6, ear: 1.0, tail: 'curl', headOX: 16, headOY: -19 },
+    walk: { stride: 7,  lift: 5,  bounce: 2.4, phases: [0, .5, .75, .25] },
+    run:  { stride: 10, lift: 9,  bounce: 4.6, stretch: .08, phases: [0, .12, .55, .67] }
+},
+{
+    name: 'NOVA', title: 'THE SLEEK SPRINTER', scale: 0.8, pscale: 0.5,
+    story: 'A retired show champion with a shelf of ribbons and zero interest in any of them. Nova chases starlight for sport, has never once tripped, and would like that noted in the record.',
+    p: { headR: 15, bodyW: 34, bodyH: 11, legLen: 24, legW: 5, ear: .9, tail: 'flow', headOX: 32, headOY: -16 },
+    walk: { stride: 11, lift: 6,  bounce: 1.6, phases: [0, .5, .75, .25] },
+    run:  { stride: 18, lift: 13, bounce: 4.2, stretch: .14, phases: [0, .15, .55, .7] }
+},
+{
+    name: 'MOCHI', title: 'THE ROUND CHONK', scale: 0.9, pscale: 0.58,
+    story: 'Former chief taste tester at the neon bakery, until the bakery ran out of things to taste. Mochi runs surprisingly fast, but strictly toward snacks, never away from anything.',
+    p: { headR: 17, bodyW: 28, bodyH: 19, legLen: 10, legW: 6.5, ear: .8, tail: 'stub', headOX: 24, headOY: -16, roll: .07 },
+    walk: { stride: 6,  lift: 4,  bounce: 1.8, phases: [0, .5, .75, .25] },
+    run:  { stride: 9,  lift: 7,  bounce: 3.4, stretch: .06, phases: [0, .12, .55, .67] }
+},
+{
+    name: 'BEAN', title: 'THE TINY KITTEN', scale: 0.95, pscale: 0.56,
+    story: 'The youngest cat in the arcade. Ears first, courage second, size a distant third. Bean is certain that one of these jumps will reach the moon and refuses to hear otherwise.',
+    p: { headR: 17, bodyW: 17, bodyH: 9, legLen: 13, legW: 4.5, ear: 1.5, tail: 'high', headOX: 14, headOY: -17 },
+    walk: { stride: 6,  lift: 7,  bounce: 2.6, phases: [0, .5, .75, .25] },
+    run:  { stride: 12, lift: 11, bounce: 6,   stretch: .1, phases: [0, .06, .5, .56] }
+}];
+var selChar = 0;
+try { selChar = Math.min(3, Math.max(0, parseInt(localStorage.getItem('mirrorcat_char')) || 0)); } catch (e) {}
 
 var dots = [], particles = [], floaters = [], stars = [], ripples = [], shooters = [];
 var shake = 0, flash = 0, flashColor = '255,79,216';
@@ -848,7 +927,7 @@ function sourEat(cat, d) {
 
 function rankFor(sc) {
     if (sc >= 400) return ['&#9733; COSMIC LEGEND &#9733;', '#ffd23f'];
-    if (sc >= 250) return ['CHOMP MASTER', '#ff4fd8'];
+    if (sc >= 250) return ['NEON MASTER', '#ff4fd8'];
     if (sc >= 150) return ['MIRROR ACE', '#00f6ff'];
     if (sc >= 80)  return ['STREET CAT', '#58ffb1'];
     if (sc >= 30)  return ['ALLEY KITTEN', '#bcd6ff'];
@@ -1110,6 +1189,148 @@ function drawBackground() {
     ctx.restore();
 }
 
+// ---- shared full-body cat renderer (game cats + menu preview cards) ----
+// draws in local space: origin at body center, cat faces +x
+function legDraw(c, hx, hy, phase, o, gy, legW, bend, col) {
+    var th = Math.PI * 2 * (o.cycle + phase);
+    var px = hx + o.g.stride * Math.cos(th) * o.amp;
+    var lift = Math.max(0, -Math.sin(th)) * o.amp;
+    var py = gy - lift * o.g.lift - legW * 0.45;
+    var mx = (hx + px) / 2 + bend, my = (hy + py) / 2 - lift * 4;
+    c.strokeStyle = col; c.fillStyle = col;
+    c.lineWidth = legW; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(hx, hy); c.quadraticCurveTo(mx, my, px, py); c.stroke();
+    c.beginPath(); c.arc(px, py, legW * 0.72, 0, 7); c.fill(); // paw
+}
+
+function tailDraw(c, bx, by, style, o, size) {
+    var sway = Math.sin(o.wag) * 0.2;
+    c.strokeStyle = o.pal.body; c.lineCap = 'round';
+    c.shadowColor = o.pal.glow; c.shadowBlur = 6 * o.fxq;
+    var pts;
+    if (style === 'curl')      pts = [[0,0], [-size*0.9, -size*0.2], [-size*1.1, -size*1.1 + sway*size]];
+    else if (style === 'flow') pts = [[0,0], [-size*1.1, -size*0.5], [-size*1.9, -size*0.3 + sway*size], [-size*2.3, -size*1.2 + sway*size*1.6]];
+    else if (style === 'high') pts = [[0,0], [-size*0.35, -size*1.2], [-size*0.1 + sway*size*.7, -size*2.1]];
+    else { // stub: little puff
+        c.fillStyle = o.pal.body;
+        c.beginPath(); c.arc(bx - size*0.15, by - size*0.25 + sway*3, size*0.34, 0, 7); c.fill();
+        c.shadowBlur = 0; return;
+    }
+    var px = bx + pts[0][0], py = by + pts[0][1], SEG = 4;
+    for (var sgi = 1; sgi < pts.length; sgi++) {
+        var ax = px, ay = py, tx = bx + pts[sgi][0], ty = by + pts[sgi][1];
+        for (var i = 1; i <= SEG; i++) {
+            var u = i / SEG;
+            var qx = ax + (tx - ax) * u, qy = ay + (ty - ay) * u;
+            var prog = (sgi - 1 + u) / (pts.length - 1);
+            c.lineWidth = 6 * (1 - prog * 0.62);
+            c.beginPath(); c.moveTo(px, py); c.lineTo(qx, qy); c.stroke();
+            px = qx; py = qy;
+        }
+    }
+    c.shadowBlur = 0;
+}
+
+function headDraw(c, hx, hy, r, ear, o) {
+    var pal = o.pal;
+    function tri(x1,y1,x2,y2,x3,y3,fill){ c.fillStyle=fill; c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.lineTo(x3,y3); c.closePath(); c.fill(); }
+    c.shadowColor = pal.glow; c.shadowBlur = 14 * o.fxq;
+    // ears (back then front)
+    tri(hx - r*0.75, hy - r*0.35, hx - r*0.85, hy - r*(0.6 + ear*0.75), hx - r*0.05, hy - r*0.8, pal.body);
+    tri(hx + r*0.2,  hy - r*0.75, hx + r*0.65, hy - r*(0.55 + ear*0.8), hx + r*0.8,  hy - r*0.3, pal.body);
+    // head + rim light
+    c.fillStyle = pal.body;
+    c.beginPath(); c.arc(hx, hy, r, 0, 7); c.fill();
+    c.lineWidth = 2; c.strokeStyle = pal.glow; c.stroke();
+    c.shadowBlur = 0;
+    // inner ear
+    tri(hx + r*0.32, hy - r*0.68, hx + r*0.58, hy - r*(0.45 + ear*0.62), hx + r*0.68, hy - r*0.35, 'rgba(0,0,0,0.25)');
+    // eyes: 3/4 view shifted toward travel; pupils track velocity, blink, happy arcs
+    var ey0 = hy - r*0.08, er = r*0.24;
+    var exs = [hx - r*0.02, hx + r*0.68];
+    if (o.happy && !o.blink) {
+        c.strokeStyle = '#0a0520'; c.lineWidth = 2.5;
+        exs.forEach(function(ex){
+            c.beginPath(); c.arc(ex, ey0, er * 0.9, Math.PI, 0); c.stroke();
+        });
+    } else {
+        var sqz = o.blink ? 0.12 : (o.squint ? 0.72 : 1);
+        c.fillStyle = '#0a0520';
+        exs.forEach(function(ex){
+            c.beginPath(); c.ellipse(ex + o.ex, ey0 + o.ey, er, er * sqz, 0, 0, 7); c.fill();
+        });
+        if (!o.blink) {
+            c.fillStyle = 'rgba(255,255,255,0.9)';
+            exs.forEach(function(ex){
+                c.beginPath(); c.arc(ex + o.ex + er*0.3, ey0 + o.ey - er*0.35*sqz, er*0.3, 0, 7); c.fill();
+            });
+        }
+    }
+    // blush on both cheeks
+    c.fillStyle = 'rgba(255,79,216,0.28)';
+    c.beginPath(); c.ellipse(hx - r*0.38, ey0 + r*0.52, r*0.24, r*0.14, 0, 0, 7); c.fill();
+    c.beginPath(); c.ellipse(hx + r*1.0,  ey0 + r*0.52, r*0.24, r*0.14, 0, 0, 7); c.fill();
+    // nose + mouth centered under the eye midpoint
+    var mx = hx + r*0.33;
+    c.fillStyle = '#ff4fd8';
+    c.beginPath(); c.moveTo(mx - r*0.14, hy + r*0.26);
+    c.lineTo(mx + r*0.14, hy + r*0.26); c.lineTo(mx, hy + r*0.44); c.closePath(); c.fill();
+    c.strokeStyle = '#0a0520'; c.lineWidth = 2;
+    c.beginPath(); c.arc(mx - r*0.17, hy + r*0.5, r*0.17, 0, Math.PI); c.stroke();
+    c.beginPath(); c.arc(mx + r*0.17, hy + r*0.5, r*0.17, 0, Math.PI); c.stroke();
+    // whiskers
+    c.strokeStyle = 'rgba(255,255,255,0.45)'; c.lineWidth = 1;
+    for (var w = -1; w <= 1; w++) {
+        c.beginPath(); c.moveTo(hx + r*0.7, hy + r*0.38 + w*3);
+        c.lineTo(hx + r*1.5, hy + r*0.3 + w*6); c.stroke();
+    }
+}
+
+function renderCatBody(c, p, o) {
+    var g = o.g;
+    var by = -Math.abs(Math.sin(Math.PI * 2 * o.cycle)) * g.bounce * o.amp;
+    var stretch = 1 + g.stretch * Math.sin(Math.PI * 2 * o.cycle) * o.amp;
+    var gy = p.legLen + p.bodyH * 0.55;      // ground reference below body center
+    var hipY = by + p.bodyH * 0.35;
+    var frontX = p.bodyW * 0.62, hindX = -p.bodyW * 0.62;
+
+    tailDraw(c, hindX - p.bodyW * 0.28, by - p.bodyH * 0.25, p.tail, o, p.bodyH + 6);
+    // far legs (darker, slightly offset back)
+    legDraw(c, frontX - 3, hipY, g.ph[1], o, gy, p.legW, -3, o.pal.dark);
+    legDraw(c, hindX - 3,  hipY, g.ph[3], o, gy, p.legW, 4,  o.pal.dark);
+    // body: bounce + gallop stretch-and-gather (+ waddle roll while walking)
+    c.fillStyle = o.pal.body;
+    c.shadowColor = o.pal.glow; c.shadowBlur = 16 * o.fxq;
+    c.save();
+    c.translate(0, by);
+    if (p.roll) c.rotate(Math.sin(Math.PI * 2 * o.cycle) * p.roll * o.amp);
+    c.scale(stretch, 2 - stretch);
+    c.beginPath(); c.ellipse(0, 0, p.bodyW, p.bodyH, 0, 0, 7); c.fill();
+    c.lineWidth = 2; c.strokeStyle = o.pal.glow; c.stroke();
+    c.restore();
+    c.shadowBlur = 0;
+    // near legs
+    legDraw(c, frontX + 2, hipY, g.ph[0], o, gy, p.legW, -3, o.pal.body);
+    legDraw(c, hindX + 2,  hipY, g.ph[2], o, gy, p.legW, 4,  o.pal.body);
+    // head lags the bounce slightly for a bobble feel
+    var hbob = -Math.abs(Math.sin(Math.PI * 2 * o.cycle - 0.6)) * g.bounce * 0.7 * o.amp;
+    headDraw(c, p.headOX, p.headOY + hbob + by * 0.6, p.headR, p.ear, o);
+}
+
+// resolve the current gait for a character at a given speed (character units/frame)
+function resolveGait(ch, spd) {
+    var rb = Math.min(1, Math.max(0, (spd - 5) / 7)); // walk -> run blend
+    function L(a, b) { return a + (b - a) * rb; }
+    return {
+        rb: rb,
+        stride: L(ch.walk.stride, ch.run.stride),
+        lift:   L(ch.walk.lift, ch.run.lift),
+        bounce: L(ch.walk.bounce, ch.run.bounce),
+        stretch: (ch.run.stretch || 0) * rb,
+        ph: [0, 1, 2, 3].map(function(i) { return L(ch.walk.phases[i], ch.run.phases[i]); })
+    };
+}
+
 function drawCat(cat) {
     var r = CATR;
     var sq = cat.squash;
@@ -1117,9 +1338,9 @@ function drawCat(cat) {
     var speed = Math.sqrt(cat.vx * cat.vx + cat.vy * cat.vy);
     // invulnerability blink while grace is active
     var bodyAlpha = (grace > 0 && state === 'playing') ? 0.45 + 0.4 * Math.abs(Math.sin(frame * 0.35)) : 1;
-    // sour gray-out after a wrong-color eat
-    var bodyCol = cat.sour > 0 ? '#98a0b4' : cat.color;
-    var glowCol = cat.sour > 0 ? '#6b7280' : cat.glow;
+    // sour gray-out after a wrong-color eat; frenzy cycles the glow
+    var pal = cat.sour > 0 ? SOURPAL : (cat.color === GOLD ? GOLDPAL : SILVERPAL);
+    if (frenzy > 0 && cat.sour <= 0) pal = { body: pal.body, dark: pal.dark, glow: 'hsl(' + ((frame * 6) % 360) + ',90%,60%)' };
 
     // trail (additive on desktop for a comet-like glow)
     if (!isTouch) ctx.globalCompositeOperation = 'lighter';
@@ -1135,137 +1356,27 @@ function drawCat(cat) {
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = bodyAlpha;
 
-    // tail: short tapered curl peeking from behind the head, gentle sway
-    cat.wag += 0.06 + speed * 0.015;
-    var tailDir = cat.vx >= 0 ? -1 : 1;
-    var sway = Math.sin(cat.wag) * 0.18; // radians of sway at the tip
-    ctx.save();
-    ctx.translate(cat.x, cat.y);
-    ctx.strokeStyle = bodyCol;
-    ctx.lineCap = 'round';
-    ctx.shadowColor = glowCol;
-    ctx.shadowBlur = 8 * FXQ;
-    // sample a quadratic curve, stroking segments with shrinking width for taper
-    var bx = tailDir * r * 0.45, by = r * 0.75;                 // base, hidden under chin
-    var cxp = tailDir * r * 1.25, cyp = r * 0.95;               // control: out and down
-    var txp = tailDir * r * 1.45, typ = r * 0.05 + sway * r;    // tip: curls upward, sways
-    var px = bx, py = by, SEG = 6;
-    for (var ti = 1; ti <= SEG; ti++) {
-        var t = ti / SEG, u = 1 - t;
-        var qx = u * u * bx + 2 * u * t * cxp + t * t * txp;
-        var qy = u * u * by + 2 * u * t * cyp + t * t * typ;
-        ctx.lineWidth = 7 * (1 - t * 0.65);
-        ctx.beginPath();
-        ctx.moveTo(px, py);
-        ctx.lineTo(qx, qy);
-        ctx.stroke();
-        px = qx; py = qy;
-    }
-    ctx.restore();
+    // ---- full-body render: walk/run gait phase-locked to real speed ----
+    var ch = CHARACTERS[selChar], p = ch.p;
+    var s = (CATR / 20) * ch.scale;
+    if (cat.vx > 0.6) cat.face = 1; else if (cat.vx < -0.6) cat.face = -1;
+    var spd = speed / s;                                   // speed in character units
+    var g = resolveGait(ch, spd);
+    var amp = Math.min(1, spd / 2.2);                      // settles to a standing idle when still
+    cat.stride += Math.min(0.35, spd / (4 * g.stride));    // distance-based phase: paws grip at any speed
+    cat.wag += 0.05 + spd * 0.008;
 
     ctx.save();
     ctx.translate(cat.x, cat.y);
-    // lean into movement
-    ctx.rotate(Math.max(-0.25, Math.min(0.25, cat.vx * 0.02)));
-    ctx.scale(sx, sy);
-
-    ctx.shadowColor = frenzy > 0 ? 'hsl(' + ((frame * 6) % 360) + ',90%,60%)' : glowCol;
-    ctx.shadowBlur = (22 + speed) * FXQ;
-
-    // ears
-    ctx.fillStyle = bodyCol;
-    ctx.beginPath();
-    ctx.moveTo(-r * 0.85, -r * 0.45);
-    ctx.lineTo(-r * 0.95, -r * 1.45);
-    ctx.lineTo(-r * 0.1, -r * 0.85);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(r * 0.85, -r * 0.45);
-    ctx.lineTo(r * 0.95, -r * 1.45);
-    ctx.lineTo(r * 0.1, -r * 0.85);
-    ctx.closePath();
-    ctx.fill();
-
-    // head
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fill();
-    // rim light: separates each cat from the dark background (silver especially)
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = glowCol;
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-
-    // inner ears
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.beginPath();
-    ctx.moveTo(-r * 0.7, -r * 0.55);
-    ctx.lineTo(-r * 0.78, -r * 1.15);
-    ctx.lineTo(-r * 0.28, -r * 0.78);
-    ctx.closePath(); ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(r * 0.7, -r * 0.55);
-    ctx.lineTo(r * 0.78, -r * 1.15);
-    ctx.lineTo(r * 0.28, -r * 0.78);
-    ctx.closePath(); ctx.fill();
-
-    // eyes (blink; happy arcs during big combos)
-    var happy = combo >= 8;
-    if (happy && cat.blink <= 0) {
-        ctx.strokeStyle = '#0a0520';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.arc(-r * 0.38, -r * 0.05, 4.5, Math.PI, 0);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(r * 0.38, -r * 0.05, 4.5, Math.PI, 0);
-        ctx.stroke();
-    } else {
-        var blinkH = cat.blink > 0 ? 0.5 : 4.5;
-        // pupils track movement direction — the cats feel alive
-        var ex = Math.max(-2.2, Math.min(2.2, cat.vx * 0.45));
-        var ey = Math.max(-1.6, Math.min(1.8, cat.vy * 0.45));
-        ctx.fillStyle = '#0a0520';
-        ctx.beginPath();
-        ctx.ellipse(-r * 0.38 + ex, -r * 0.1 + ey, 3.2, blinkH, 0, 0, Math.PI * 2);
-        ctx.ellipse(r * 0.38 + ex, -r * 0.1 + ey, 3.2, blinkH, 0, 0, Math.PI * 2);
-        ctx.fill();
-        if (cat.blink <= 0) {
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(-r * 0.32 + ex, -r * 0.2 + ey, 1.2, 0, Math.PI * 2);
-            ctx.arc(r * 0.44 + ex, -r * 0.2 + ey, 1.2, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-
-    // nose + mouth
-    ctx.fillStyle = '#ff4fd8';
-    ctx.beginPath();
-    ctx.moveTo(0, r * 0.18);
-    ctx.lineTo(-3, r * 0.32);
-    ctx.lineTo(3, r * 0.32);
-    ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(0, r * 0.34);
-    ctx.quadraticCurveTo(-4, r * 0.55, -7, r * 0.45);
-    ctx.moveTo(0, r * 0.34);
-    ctx.quadraticCurveTo(4, r * 0.55, 7, r * 0.45);
-    ctx.stroke();
-
-    // whiskers
-    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(-r * 0.6, r * 0.15); ctx.lineTo(-r * 1.5, r * 0.02);
-    ctx.moveTo(-r * 0.6, r * 0.3);  ctx.lineTo(-r * 1.45, r * 0.38);
-    ctx.moveTo(r * 0.6, r * 0.15);  ctx.lineTo(r * 1.5, r * 0.02);
-    ctx.moveTo(r * 0.6, r * 0.3);   ctx.lineTo(r * 1.45, r * 0.38);
-    ctx.stroke();
-
+    ctx.scale(s * cat.face * sx, s * sy);
+    // nose leans into climbs and dives
+    ctx.rotate(Math.max(-0.3, Math.min(0.3, cat.vy * 0.02)) * amp);
+    renderCatBody(ctx, p, {
+        cycle: cat.stride, g: g, amp: amp, pal: pal, fxq: FXQ, wag: cat.wag,
+        ex: Math.max(-2.5, Math.min(2.5, cat.vx * 0.4)) * cat.face,
+        ey: Math.max(-1.8, Math.min(2, cat.vy * 0.4)),
+        blink: cat.blink > 0, happy: combo >= 8, squint: g.rb > 0.6 && combo < 8
+    });
     ctx.restore();
     ctx.globalAlpha = 1;
 
@@ -1863,6 +1974,61 @@ function render() {
         }
     }
 }
+
+// ============================== CHARACTER SELECT UI ==============================
+var charCards = [].slice.call(document.querySelectorAll('.charcard'));
+var charStoryEl = document.getElementById('charStory');
+var infoOverlay = document.getElementById('infoOverlay');
+
+function selectChar(i) {
+    selChar = i;
+    try { localStorage.setItem('mirrorcat_char', i); } catch (e) {}
+    charCards.forEach(function(el, j) { el.className = 'charcard' + (j === i ? ' sel' : ''); });
+    var ch = CHARACTERS[i];
+    charStoryEl.innerHTML = '<b>' + ch.name + '</b> <span class="ctitle">&middot; ' + ch.title + '</span><br>' + ch.story;
+}
+charCards.forEach(function(el, i) { el.onclick = function() { selectChar(i); }; });
+selectChar(selChar);
+
+function toggleInfo(on) {
+    infoOverlay.className = on ? 'overlay show' : 'overlay';
+}
+
+// live previews inside the select cards: the chosen cat runs (gold), the rest walk (silver)
+(function charPreviewLoop() {
+    requestAnimationFrame(charPreviewLoop);
+    if (startOverlay.className.indexOf('show') < 0) return;
+    var t = performance.now() / 1000;
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    charCards.forEach(function(el, i) {
+        var cv = el.querySelector('canvas');
+        var w = cv.clientWidth || 84, h = cv.clientHeight || 58;
+        if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+        var c = cv.getContext('2d');
+        c.setTransform(dpr, 0, 0, dpr, 0, 0);
+        c.clearRect(0, 0, w, h);
+        var ch = CHARACTERS[i], sel = i === selChar;
+        var spdU = sel ? 14 : 6;                      // run when chosen, stroll otherwise
+        var g = resolveGait(ch, spdU);
+        var pxPerSec = spdU * 15;                     // shared by paws and ground marks
+        c.save();
+        c.translate(w / 2, h * 0.58);
+        c.scale(ch.pscale, ch.pscale);
+        // scrolling ground marks, speed matched to the paws
+        var gy = ch.p.legLen + ch.p.bodyH * 0.55;
+        var off = (t * pxPerSec) % 22;
+        c.strokeStyle = 'rgba(127,143,192,0.45)'; c.lineWidth = 2; c.lineCap = 'round';
+        for (var d = -3; d < 4; d++) {
+            c.beginPath(); c.moveTo(d * 22 - off, gy + 5); c.lineTo(d * 22 - off + 10, gy + 5); c.stroke();
+        }
+        renderCatBody(c, ch.p, {
+            cycle: t * pxPerSec / (4 * g.stride), g: g, amp: 1,
+            pal: sel ? GOLDPAL : SILVERPAL, fxq: isTouch ? 0 : 0.6, wag: t * 3,
+            ex: 1, ey: 0, blink: false, happy: sel, squint: false
+        });
+        c.restore();
+    });
+})();
 
 // idle menu animation behind start screen: the two cats chase each other
 // in a mirrored orbit so the core mechanic is visible before you even play
