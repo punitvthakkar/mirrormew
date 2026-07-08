@@ -39,12 +39,16 @@
     }
     .hud-block { text-align: left; }
     .hud-block.right { text-align: right; }
-    .hud-label { font-size: 9px; color: #7f6fff; letter-spacing: 2px; margin-bottom: 6px; text-shadow: 0 0 8px #7f6fff; }
-    #score { font-size: 22px; color: #fff; text-shadow: 0 0 12px #00f6ff, 0 0 24px #00f6ff; transition: transform .1s; }
+    .hud-label { font-size: max(9px, 1.2vmin); color: #8f83ff; letter-spacing: 2px; margin-bottom: 6px; text-shadow: 0 0 6px rgba(127,111,255,.5); }
+    #score { font-size: max(22px, 3vmin); color: #fff; text-shadow: 0 0 3px rgba(255,255,255,.6), 0 0 14px rgba(0,246,255,.55); transition: transform .1s; }
     #score.pop { transform: scale(1.25); }
-    #multi { font-size: 10px; color: #ff8a00; text-shadow: 0 0 8px #ff8a00; margin-top: 6px; height: 12px; }
-    #hiscore { font-size: 12px; color: #ffd23f; text-shadow: 0 0 10px #ffd23f; }
-    #lives { font-size: 16px; letter-spacing: 4px; margin-top: 4px; }
+    #multi { font-size: max(10px, 1.3vmin); color: #ff8a00; text-shadow: 0 0 8px #ff8a00; margin-top: 6px; height: 12px; }
+    #hiscore { font-size: max(12px, 1.8vmin); color: #ffd23f; text-shadow: 0 0 6px rgba(255,210,63,.5); }
+    #lives {
+        font-size: max(16px, 2.4vmin); letter-spacing: 4px; margin-top: 4px;
+        font-family: -apple-system, 'Segoe UI Symbol', 'Noto Sans Symbols 2', sans-serif;
+        color: #ff4fd8; text-shadow: 0 0 8px #ff4fd8; /* fallback: hearts must never render dark */
+    }
     #combo {
         position: absolute; top: 74px; left: 50%; transform: translateX(-50%);
         font-size: 13px; color: #ff4fd8; text-shadow: 0 0 12px #ff4fd8;
@@ -66,7 +70,7 @@
     }
     #level {
         position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
-        font-size: 11px; color: #58ffb1; text-shadow: 0 0 10px #58ffb1;
+        font-size: max(11px, 1.5vmin); color: #58ffb1; text-shadow: 0 0 10px #58ffb1;
         z-index: 10; pointer-events: none;
     }
     #banner {
@@ -90,6 +94,7 @@
         font-size: 9px; padding: 7px 10px; border: 2px solid; border-radius: 4px;
         background: rgba(0,0,0,.6);
     }
+    .ptag.low { animation: blink .4s step-end infinite; }
     #mutehint {
         position: absolute; bottom: 16px; right: 18px; font-size: 8px;
         color: rgba(255,255,255,.35); z-index: 10; pointer-events: none;
@@ -101,49 +106,84 @@
         position: absolute; inset: 0; display: none; z-index: 20;
         align-items: center; justify-content: center;
         background: radial-gradient(ellipse at center, rgba(10,4,40,.82) 0%, rgba(3,1,14,.95) 100%);
+        overflow-y: auto; padding: 16px 10px;
     }
     .overlay.show { display: flex; }
     .panel {
-        text-align: center; padding: 40px 52px;
-        border: 3px solid #00f6ff; border-radius: 8px;
-        background: rgba(5,1,20,.9);
-        box-shadow: 0 0 30px rgba(0,246,255,.45), inset 0 0 40px rgba(0,246,255,.08);
+        text-align: center; padding: 36px 48px;
+        border: 2px solid rgba(0,246,255,.7); border-radius: 10px;
+        background: linear-gradient(180deg, rgba(12,5,34,.96), rgba(4,1,16,.96));
+        box-shadow: 0 0 24px rgba(0,246,255,.25), 0 24px 60px rgba(0,0,0,.6);
         animation: panelIn .35s cubic-bezier(.2,1.6,.4,1);
-        max-width: 94vw; max-height: 92vh; overflow-y: auto;
+        max-width: 94vw;
+        /* margin:auto (not align-items centering alone) keeps an overflowing
+           panel centered AND fully scroll-reachable instead of clipped */
+        margin: auto;
     }
     @keyframes panelIn { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     .panel h1 {
-        margin: 0 0 8px; font-size: 30px; color: #ffd23f;
-        text-shadow: 0 0 14px #ffd23f, 0 0 40px #ff8a00;
-        animation: titleGlow 1.6s ease-in-out infinite alternate,
+        margin: 0; font-size: 32px; color: #ffd23f; letter-spacing: 2px;
+        text-shadow: 0 0 4px rgba(255,210,63,.8), 0 0 18px rgba(255,138,0,.45);
+        animation: titleGlow 2s ease-in-out infinite alternate,
                    titleFloat 3.2s ease-in-out infinite;
     }
     @keyframes titleFloat {
         0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-6px); }
+        50% { transform: translateY(-5px); }
     }
     @keyframes titleGlow {
-        from { text-shadow: 0 0 10px #ffd23f, 0 0 30px #ff8a00; }
-        to   { text-shadow: 0 0 22px #ffd23f, 0 0 60px #ff8a00; }
+        from { text-shadow: 0 0 4px rgba(255,210,63,.7), 0 0 14px rgba(255,138,0,.35); }
+        to   { text-shadow: 0 0 6px rgba(255,210,63,.9), 0 0 26px rgba(255,138,0,.55); }
     }
-    .panel h2 { margin: 0 0 16px; font-size: 24px; color: #ff4fd8; text-shadow: 0 0 14px #ff4fd8; }
+    .tagline { font-size: 8px; color: #7f8fc0; letter-spacing: 4px; margin: 12px 0 0; }
+    .panel h2 { margin: 0 0 14px; font-size: 24px; color: #ff4fd8; letter-spacing: 2px; text-shadow: 0 0 4px rgba(255,79,216,.8), 0 0 16px rgba(255,79,216,.4); }
     .panel p { font-size: 10px; line-height: 2; color: #bcd6ff; margin: 12px 0; }
-    .panel .rule b { font-size: 10px; }
-    .gold   { color: #ffd23f; text-shadow: 0 0 8px #ffd23f; }
-    .cyan   { color: #00f6ff; text-shadow: 0 0 8px #00f6ff; }
-    .pink   { color: #ff4fd8; text-shadow: 0 0 8px #ff4fd8; }
-    .green  { color: #58ffb1; text-shadow: 0 0 8px #58ffb1; }
-    .orange { color: #ff8a00; text-shadow: 0 0 8px #ff8a00; }
-    .red    { color: #ff3355; text-shadow: 0 0 8px #ff3355; }
-    .powgrid {
-        display: grid; grid-template-columns: 1fr 1fr; gap: 6px 26px;
-        font-size: 9px; line-height: 1.9; text-align: left; margin: 14px auto;
-        width: fit-content;
+    .divider {
+        height: 1px; margin: 20px auto; width: 78%;
+        background: linear-gradient(90deg, transparent, rgba(127,143,192,.5), transparent);
     }
-    #finalStats { font-size: 11px; line-height: 2.1; color: #fff; }
-    #newRecord { display: none; font-size: 12px; color: #58ffb1; animation: blink .5s step-end infinite; }
+    .gold   { color: #ffd23f; text-shadow: 0 0 5px rgba(255,210,63,.45); }
+    .cyan   { color: #00f6ff; text-shadow: 0 0 5px rgba(0,246,255,.45); }
+    .pink   { color: #ff4fd8; text-shadow: 0 0 5px rgba(255,79,216,.45); }
+    .green  { color: #58ffb1; text-shadow: 0 0 5px rgba(88,255,177,.45); }
+    .orange { color: #ff8a00; text-shadow: 0 0 5px rgba(255,138,0,.45); }
+    .red    { color: #ff3355; text-shadow: 0 0 5px rgba(255,51,85,.45); }
+    .rules { font-size: 9px; line-height: 1.6; color: #bcd6ff; }
+    .rules .rline { margin: 11px 0; }
+    .rules b { font-size: 9px; }
+    .chips {
+        display: flex; flex-wrap: wrap; justify-content: center;
+        gap: 8px; margin: 0 auto; max-width: 460px;
+    }
+    .chip {
+        font-size: 8px; line-height: 1; padding: 8px 10px;
+        border: 1px solid; border-radius: 20px;
+        color: #dfe9ff; background: rgba(255,255,255,.04);
+        white-space: nowrap;
+    }
+    /* symbol glyphs aren't in the pixel font — use system fonts */
+    .sym { font-style: normal; font-family: -apple-system, 'Segoe UI Symbol', 'Noto Sans Symbols 2', sans-serif; }
+    /* icons are inline SVG (fancy unicode glyphs tofu on many systems) */
+    .chip svg, .rules svg { width: 11px; height: 11px; margin-right: 5px; vertical-align: -2px; }
+    .protip { font-size: 8px; line-height: 1.9; color: #7f8fc0; margin: 18px 0 0; letter-spacing: 1px; }
+    .protip b { font-size: 8px; }
+
+    /* game-over stats */
+    .finalScore { margin: 6px 0 2px; }
+    .finalScore .fs-label { font-size: 8px; color: #7f8fc0; letter-spacing: 3px; margin-bottom: 8px; }
+    .finalScore .fs-value {
+        font-size: 36px; color: #ffd23f;
+        text-shadow: 0 0 6px rgba(255,210,63,.8), 0 0 24px rgba(255,138,0,.4);
+    }
+    .stats {
+        display: grid; grid-template-columns: repeat(3, 1fr);
+        gap: 14px 30px; width: fit-content; margin: 0 auto;
+    }
+    .stat .lbl { display: block; font-size: 7px; color: #7f8fc0; letter-spacing: 2px; margin-bottom: 7px; }
+    .stat .val { font-size: 13px; }
+    #newRecord { display: none; font-size: 11px; color: #58ffb1; margin: 14px 0 0; animation: blink .5s step-end infinite; }
     @keyframes blink { 50% { opacity: 0; } }
-    #rankLine { font-size: 13px; margin: 10px 0 0; }
+    #rankLine { font-size: 12px; margin: 14px 0 0; }
 
     button {
         padding: 16px 34px; font-size: 13px; margin-top: 20px; cursor: pointer;
@@ -196,15 +236,35 @@
     body.touch #crt { display: none; }
     body.touch #powerbar { bottom: calc(102px + env(safe-area-inset-bottom)); }
 
+    /* ---------- Short screens (720p laptops etc.): compact panel so it fits ---------- */
+    @media (max-height: 820px) {
+        .panel { padding: 20px 34px; }
+        .panel h1 { font-size: 24px; }
+        .panel p { margin: 8px 0; }
+        .tagline { margin-top: 8px; }
+        .divider { margin: 12px auto; }
+        .rules .rline { margin: 8px 0; }
+        .chips { gap: 6px; }
+        .protip { margin-top: 10px; line-height: 1.7; }
+        button { margin-top: 14px; padding: 12px 26px; font-size: 12px; }
+        .finalScore .fs-value { font-size: 30px; }
+        .stats { gap: 10px 24px; }
+    }
+
     /* ---------- Small screens ---------- */
     @media (max-width: 560px) {
         .panel { padding: 24px 18px; }
         .panel h1 { font-size: 20px; }
         .panel h2 { font-size: 18px; }
         .panel p { font-size: 8px; }
-        .panel .rule b, .powgrid { font-size: 8px; }
-        .powgrid { grid-template-columns: 1fr; gap: 4px; }
-        .powgrid span { text-align: center !important; grid-column: 1 !important; }
+        .rules, .rules b { font-size: 8px; }
+        .chip { font-size: 7px; padding: 7px 8px; }
+        .chips { gap: 6px; }
+        .divider { margin: 14px auto; }
+        .stats { gap: 12px 18px; }
+        .stat .val { font-size: 11px; }
+        .finalScore .fs-value { font-size: 26px; }
+        .protip { font-size: 7px; }
         button { padding: 14px 24px; font-size: 11px; }
         #score { font-size: 16px; }
         #hiscore { font-size: 10px; }
@@ -229,7 +289,7 @@
         <div class="hud-block right">
             <div class="hud-label">HI-SCORE</div>
             <div id="hiscore">0</div>
-            <div id="lives">&#10084;&#10084;&#10084;</div>
+            <div id="lives">&#9829;&#9829;&#9829;</div>
         </div>
     </div>
     <div id="level">LEVEL 1</div>
@@ -248,28 +308,29 @@
     <div class="overlay show" id="startOverlay">
         <div class="panel">
             <h1>MIRROR CAT</h1>
-            <p class="cyan" style="font-size:9px">NEON ARCADE EDITION &#9733; DELUXE</p>
-            <p class="rule">
-                <span id="ctrlRule">YOU CONTROL <b class="gold">GOLD CAT</b> WITH THE MOUSE.</span><br>
-                <b class="cyan">MIRROR CAT</b> COPIES YOU... REVERSED.<br>
-                EAT ONLY YOUR OWN COLOR!<br>
-                <b class="pink">WRONG SNACK = LOSE A LIFE</b> &nbsp;
-                <b class="red">&#10041; BOMB = DODGE IT!</b><br>
-                <b class="orange" id="pulseHint">CLICK</b> = SHOCKWAVE PULSE (KNOCKS DOTS AWAY)
-            </p>
-            <p class="rule" style="font-size:9px">
-                <b class="cyan">MIRROR SYNC</b>: BOTH CATS EAT TOGETHER = BONUS!<br>
-                <b class="red">GRAZE</b>: SKIM PAST BOMBS FOR EXTRA POINTS
-            </p>
-            <div class="powgrid">
-                <span><b class="gold">&#9733; STAR</b> +5 PTS</span>
-                <span><b class="pink">&#10084; HEART</b> EXTRA LIFE</span>
-                <span><b class="cyan">&#9200; CLOCK</b> SLOW-MO</span>
-                <span><b class="green">&#9678; ORB</b> SHIELD</span>
-                <span><b class="orange">&#9902; MAGNET</b> PULLS SNACKS</span>
-                <span><b class="gold">&#10039; 2X</b> DOUBLE POINTS</span>
-                <span style="grid-column:1/3;text-align:center"><b class="pink">&#9672; FRENZY</b> EAT EVERYTHING FOR 8s!</span>
+            <p class="tagline">NEON ARCADE EDITION</p>
+            <p id="menuBest" style="font-size:9px;color:#ffd23f;text-shadow:0 0 8px rgba(255,210,63,.5);margin:10px 0 0;letter-spacing:2px;"></p>
+            <div class="divider"></div>
+            <div class="rules">
+                <div class="rline"><span id="ctrlRule">MOVE THE MOUSE &mdash; <b class="gold">GOLD CAT</b> FOLLOWS.</span></div>
+                <div class="rline"><b class="cyan">MIRROR CAT</b> COPIES YOU, REVERSED.</div>
+                <div class="rline">EAT YOUR OWN COLOR &middot; DODGE <b class="red"><svg viewBox="0 0 20 20"><path d="M10 0l1.5 6.5L18 4l-4.5 4.5L20 10l-6.5 1.5L16 18l-4.5-4.5L10 20l-1.5-6.5L2 16l4.5-4.5L0 10l6.5-1.5L4 2l4.5 4.5z" fill="#ff3355"/></svg> BOMBS</b></div>
+                <div class="rline"><b class="orange" id="pulseHint">CLICK</b> FIRES A SHOCKWAVE PULSE</div>
             </div>
+            <div class="divider"></div>
+            <div class="chips">
+                <span class="chip" style="border-color:#ffd23f"><svg viewBox="0 0 20 20"><path d="M10 1l2.6 5.6 6.1.7-4.5 4.2 1.2 6L10 14.4l-5.4 3.1 1.2-6L1.3 7.3l6.1-.7z" fill="#ffd23f"/></svg>STAR +5</span>
+                <span class="chip" style="border-color:#ff4fd8"><svg viewBox="0 0 20 20"><path d="M10 17C3.5 11.5 2 7.5 4.8 5 6.8 3.3 9 4.3 10 6.4 11 4.3 13.2 3.3 15.2 5 18 7.5 16.5 11.5 10 17z" fill="#ff4fd8"/></svg>EXTRA LIFE</span>
+                <span class="chip" style="border-color:#00f6ff"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="#00f6ff"/><path d="M10 5v5h4" stroke="#04010d" stroke-width="2" fill="none"/></svg>SLOW-MO</span>
+                <span class="chip" style="border-color:#58ffb1"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="#58ffb1"/><circle cx="10" cy="10" r="4" fill="none" stroke="#fff" stroke-width="1.6"/></svg>SHIELD</span>
+                <span class="chip" style="border-color:#ff8a00"><svg viewBox="0 0 20 20"><path d="M4 11a6 6 0 0 0 12 0V4h-4v7a2 2 0 0 1-4 0V4H4z" fill="#ff8a00"/><path d="M4 4h4v3H4zM12 4h4v3h-4z" fill="#e8f4ff"/></svg>MAGNET</span>
+                <span class="chip" style="border-color:#ffd23f"><svg viewBox="0 0 20 20"><path d="M10 1l1.8 6.2L18 9l-6.2 1.8L10 17l-1.8-6.2L2 9l6.2-1.8z" fill="#ffd23f"/></svg>2X POINTS</span>
+                <span class="chip" style="border-color:#ff4fd8"><svg viewBox="0 0 20 20"><path d="M10 1l7 9-7 9-7-9z" fill="#ff4fd8"/><circle cx="10" cy="10" r="2.4" fill="#fff"/></svg>FRENZY</span>
+            </div>
+            <p class="protip">
+                PRO &mdash; <b class="cyan">SYNC</b> BOTH CATS' BITES FOR A BONUS
+                &middot; <b class="red">GRAZE</b> BOMBS FOR POINTS
+            </p>
             <button onclick="startGame()">INSERT COIN</button>
         </div>
     </div>
@@ -277,9 +338,14 @@
     <div class="overlay" id="gameOverOverlay">
         <div class="panel">
             <h2>GAME OVER</h2>
-            <p id="finalStats"></p>
+            <div class="finalScore">
+                <div class="fs-label">SCORE</div>
+                <div class="fs-value" id="finalScore">0</div>
+            </div>
             <p id="rankLine"></p>
-            <p id="newRecord">&#9733; NEW HI-SCORE! &#9733;</p>
+            <p id="newRecord"><span class="sym">&#9733;</span> NEW HI-SCORE <span class="sym">&#9733;</span></p>
+            <div class="divider"></div>
+            <div class="stats" id="finalStats"></div>
             <button onclick="startGame()">PLAY AGAIN</button>
         </div>
     </div>
@@ -328,13 +394,16 @@ function resize() {
     bgGrad.addColorStop(1, '#04010d');
     vigGrad = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
     vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
-    vigGrad.addColorStop(1, 'rgba(0,0,0,0.45)');
+    vigGrad.addColorStop(1, 'rgba(0,0,0,0.28)'); // lighter: corners keep spatial reference
 }
 window.addEventListener('resize', resize);
 resize();
 
 // ============================== STATE ==============================
 var GOLD = '#ffd23f', SILVER = '#e8f4ff';
+// render tint only: silver food shows cyan so it rhymes with the mirror cat's
+// glow ("my color" reads instantly); SILVER stays the logical color everywhere
+function foodTint(c) { return c === SILVER ? '#7fe8ff' : c; }
 var state = 'menu';           // menu | playing | dead
 var score = 0, lives = 3, level = 1, frame = 0;
 var combo = 0, comboTimer = 0, bestCombo = 0, eaten = 0;
@@ -342,10 +411,11 @@ var powerups = 0, bombsDodged = 0, recordShown = false;
 var hiscore = 0;
 try { hiscore = parseInt(localStorage.getItem('mirrorcat_hiscore')) || 0; } catch (e) {}
 hiscoreEl.textContent = hiscore;
+if (hiscore > 0) document.getElementById('menuBest').textContent = 'BEST: ' + hiscore;
 
 var mouse = { x: W / 2, y: H / 2 };
 var cat1 = { x: W / 2, y: H / 2, color: GOLD, glow: '#ffb300', vx: 0, vy: 0, blink: 0, squash: 0, trail: [], wag: 0 };
-var cat2 = { x: W / 2, y: H / 2, color: SILVER, glow: '#7fd4ff', vx: 0, vy: 0, blink: 0, squash: 0, trail: [], wag: Math.PI };
+var cat2 = { x: W / 2, y: H / 2, color: SILVER, glow: '#00f6ff', vx: 0, vy: 0, blink: 0, squash: 0, trail: [], wag: Math.PI };
 
 var dots = [], particles = [], floaters = [], stars = [], ripples = [], shooters = [];
 var shake = 0, flash = 0, flashColor = '255,79,216';
@@ -357,6 +427,7 @@ var freezeFrames = 0;                 // hit-stop: world freezes for a beat on i
 var lastEatFrame = { gold: -999, silver: -999 }; // for MIRROR SYNC bonus
 var beamTimer = 0;                    // cats linked by light beam after a sync
 var grazes = 0;                       // near-miss count (stats)
+var showHint = false;                 // first-ever-run onboarding nudge
 
 // starfield background (fewer on mobile for perf)
 for (var s = 0; s < (isTouch ? 50 : 90); s++) {
@@ -364,10 +435,20 @@ for (var s = 0; s < (isTouch ? 50 : 90); s++) {
 }
 
 // ============================== AUDIO ==============================
-var AC = null;
+var AC = null, masterOut = null;
 function audio() {
     if (muted) return null;
-    if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+    if (!AC) {
+        try {
+            AC = new (window.AudioContext || window.webkitAudioContext)();
+            // master bus: gentle compressor stops clipping when sfx stack up
+            var comp = AC.createDynamicsCompressor();
+            comp.threshold.value = -18; comp.knee.value = 12; comp.ratio.value = 6;
+            masterOut = AC.createGain();
+            masterOut.gain.value = 0.9;
+            masterOut.connect(comp); comp.connect(AC.destination);
+        } catch (e) {}
+    }
     if (AC && AC.state === 'suspended') AC.resume();
     return AC;
 }
@@ -379,10 +460,14 @@ function beep(freq, dur, type, vol, slide) {
     if (slide) o.frequency.exponentialRampToValueAtTime(slide, ac.currentTime + dur);
     g.gain.setValueAtTime(vol || 0.08, ac.currentTime);
     g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur);
-    o.connect(g); g.connect(ac.destination);
+    o.connect(g); g.connect(masterOut || ac.destination);
     o.start(); o.stop(ac.currentTime + dur);
 }
-function sfxEat(c)   { beep(440 + Math.min(c, 20) * 40, 0.09, 'square', 0.06, 880 + c * 40); }
+function sfxEat(c)   {
+    beep(440 + Math.min(c, 20) * 40, 0.09, 'square', 0.06, 880 + c * 40);
+    beep(880 + Math.min(c, 20) * 40, 0.05, 'sine', 0.035, 1400 + c * 40); // sparkle layer
+}
+function sfxComboLost() { beep(392, 0.14, 'sawtooth', 0.05, 180); }
 function sfxPower()  { beep(523, 0.1, 'triangle', 0.1, 1046); setTimeout(function(){ beep(784, 0.15, 'triangle', 0.1, 1568); }, 90); }
 function sfxHurt()   { beep(220, 0.3, 'sawtooth', 0.12, 55); }
 function sfxLevel()  { [523,659,784,1046].forEach(function(f,i){ setTimeout(function(){ beep(f, 0.12, 'square', 0.07); }, i*80); }); }
@@ -407,7 +492,7 @@ function noiseHit(dur, vol, hipass) {
     var g = ac.createGain();
     g.gain.setValueAtTime(vol, ac.currentTime);
     g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur);
-    src.connect(flt); flt.connect(g); g.connect(ac.destination);
+    src.connect(flt); flt.connect(g); g.connect(masterOut || ac.destination);
     src.start();
 }
 
@@ -427,6 +512,8 @@ function musicTick() {
         var n = SCALE[(musicStep * 3 + level) % SCALE.length];
         beep(root * 4 * Math.pow(2, n / 12), 0.1, 'square', frenzy > 0 ? 0.035 : 0.018);
     }
+    // last life: low heartbeat thump under the music
+    if (lives === 1 && musicStep % 4 === 2) beep(80, 0.14, 'sine', 0.08, 30);
     // high combo: sparkling counter-melody an octave up
     if (combo >= 8 && musicStep % 4 === 2) {
         var n2 = SCALE[(musicStep * 5 + combo) % SCALE.length];
@@ -555,8 +642,20 @@ function firePulse() {
 // ============================== SPAWNING ==============================
 function spawnDot() {
     var m = 60;
+    // bias food toward a mid-radius ring around center (60%) so the middle of
+    // the playfield stays alive; the rest spawn uniformly for coverage
+    var dx0, dy0;
+    if (Math.random() < 0.6) {
+        var ang = rand(0, Math.PI * 2);
+        dx0 = W / 2 + Math.cos(ang) * rand(0.1, 0.35) * W;
+        dy0 = H / 2 + Math.sin(ang) * rand(0.1, 0.35) * H;
+        dx0 = Math.max(m, Math.min(W - m, dx0));
+        dy0 = Math.max(m + 60, Math.min(H - m, dy0));
+    } else {
+        dx0 = rand(m, W - m); dy0 = rand(m + 60, H - m);
+    }
     var d = {
-        x: rand(m, W - m), y: rand(m + 60, H - m),
+        x: dx0, y: dy0,
         color: Math.random() < 0.5 ? GOLD : SILVER,
         r: 0, targetR: 9, born: frame,
         life: Math.max(300, 640 - level * 30),
@@ -569,6 +668,7 @@ function spawnDot() {
         d.vx = Math.cos(a) * sp; d.vy = Math.sin(a) * sp;
     }
     dots.push(d);
+    ripple(d.x, d.y, foodTint(d.color)); // spawn-in telegraph: field feels alive
 }
 function spawnPowerup() {
     var roll = Math.random();
@@ -580,11 +680,19 @@ function spawnPowerup() {
              : roll < 0.90 ? 'frenzy' : 'heart';
     if (type === 'heart' && lives >= 3) type = 'star';
     var m = 70;
+    var px = rand(m, W - m), py = rand(m + 60, H - m);
     dots.push({
-        x: rand(m, W - m), y: rand(m + 60, H - m),
+        x: px, y: py,
         r: 0, targetR: 12, born: frame, life: 420,
         vx: 0, vy: 0, type: type, phase: Math.random() * Math.PI * 2
     });
+    // announce the drop: a ring in the power-up's own color shrinks onto it
+    var pcol = type === 'star' || type === 'x2' ? '#ffd23f'
+             : type === 'heart' || type === 'frenzy' ? '#ff4fd8'
+             : type === 'clock' ? '#00f6ff'
+             : type === 'magnet' ? '#ff8a00' : '#58ffb1';
+    ripples.push({ x: px, y: py, r: 90, color: pcol, life: 1, shrink: true });
+    beep(1046, 0.12, 'sine', 0.04, 1568);
 }
 function spawnBomb() {
     var m = 80;
@@ -592,8 +700,8 @@ function spawnBomb() {
     var x, y, tries = 0;
     do {
         x = rand(m, W - m); y = rand(m + 60, H - m); tries++;
-    } while (tries < 12 && ((Math.abs(x - cat1.x) < 130 && Math.abs(y - cat1.y) < 130) ||
-                            (Math.abs(x - cat2.x) < 130 && Math.abs(y - cat2.y) < 130)));
+    } while (tries < 12 && ((Math.abs(x - cat1.x) < 160 && Math.abs(y - cat1.y) < 160) ||
+                            (Math.abs(x - cat2.x) < 160 && Math.abs(y - cat2.y) < 160)));
     var sp = Math.min(0.5 + level * 0.15, 2.2) * (Math.min(W, H) < 600 ? 0.75 : 1);
     var a = Math.random() * Math.PI * 2;
     dots.push({
@@ -603,6 +711,9 @@ function spawnBomb() {
         // seekers slowly hunt the nearest cat from level 5 up — pulse them away!
         homing: level >= 5 && Math.random() < 0.35
     });
+    // fair warning: red ring + low blip where the bomb materializes
+    ripple(x, y, '#ff3355');
+    beep(150, 0.1, 'square', 0.03, 90);
 }
 
 // ============================== GAME FLOW ==============================
@@ -619,9 +730,19 @@ function startGame() {
     pausebtnEl.innerHTML = '&#10074;&#10074;';
     cat1.x = mouse.x; cat1.y = mouse.y; cat1.trail = [];
     cat2.x = W - mouse.x; cat2.y = H - mouse.y; cat2.trail = [];
+    // pre-seed the field so the first seconds aren't dead air
+    for (var sd = 0; sd < 6; sd++) spawnDot();
+    // onboarding nudge: only ever on the very first run on this device
+    showHint = false;
+    try {
+        if (!localStorage.getItem('mirrorcat_played')) {
+            showHint = true;
+            localStorage.setItem('mirrorcat_played', '1');
+        }
+    } catch (e) {}
     scoreEl.textContent = '0';
     multiEl.textContent = '';
-    livesEl.innerHTML = '&#10084;&#10084;&#10084;';
+    updateLives(); // colored spans, not bare glyphs — always visible
     levelEl.textContent = 'LEVEL 1';
     comboEl.className = ''; combobarEl.className = '';
     pausedTag.className = '';
@@ -635,13 +756,13 @@ function startGame() {
 function updateLives() {
     var h = '';
     for (var i = 0; i < 3; i++) {
-        h += i < lives ? '<span style="color:#ff4fd8;text-shadow:0 0 8px #ff4fd8">&#10084;</span>'
-                       : '<span style="color:#332244">&#10084;</span>';
+        h += i < lives ? '<span style="color:#ff4fd8;text-shadow:0 0 8px #ff4fd8">&#9829;</span>'
+                       : '<span style="color:#332244">&#9829;</span>';
     }
     livesEl.innerHTML = h;
 }
 
-function loseLife(x, y) {
+function loseLife(x, y, cat, cause) {
     if (shield > 0) {
         shield = 0;
         sfxShield();
@@ -654,11 +775,19 @@ function loseLife(x, y) {
     combo = 0; comboTimer = 0;
     comboEl.className = ''; combobarEl.className = '';
     updateLives();
+    grace = level === 1 ? 120 : 90; // lenient 2s grace on level 1, 1.5s after
     sfxHurt();
-    freezeFrames = 10; // dramatic hit-stop on damage
+    // death legibility: longer hit-stop + brief slow-mo so the player SEES what happened
+    freezeFrames = cat === cat2 ? 16 : 12;
+    slowmo = Math.max(slowmo, 55);
     shake = 18; flash = 0.55; flashColor = '255,60,90';
     burst(x, y, '#ff3355', 36, 8);
-    floater(x, y, 'OUCH!', '#ff3355');
+    // say exactly WHICH cat hit WHAT, at the collision point
+    var who = cat === cat2 ? 'MIRROR CAT' : 'GOLD CAT';
+    var what = cause === 'food' ? 'ATE WRONG COLOR!' : 'HIT A BOMB!';
+    floater(x, y, who + ' ' + what, '#ff3355');
+    // attention cue: big ring converging on the collision (vital for off-focus mirror hits)
+    ripples.push({ x: x, y: y, r: cat === cat2 ? 180 : 120, color: '#ff3355', life: 1, shrink: true, vr: 5 });
     if (lives <= 0) endGame();
 }
 
@@ -681,19 +810,40 @@ function endGame() {
         hiscoreEl.textContent = hiscore;
     }
     var secs = Math.floor(frame / 60);
+    document.getElementById('finalScore').textContent = '0';
+    function statCell(label, val, cls) {
+        return '<div class="stat"><span class="lbl">' + label + '</span>' +
+               '<span class="val ' + cls + '">' + val + '</span></div>';
+    }
     finalStatsEl.innerHTML =
-        'SCORE: <span class="gold">' + score + '</span><br>' +
-        'SNACKS: <span class="cyan">' + eaten + '</span> &nbsp; ' +
-        'BEST COMBO: <span class="pink">x' + bestCombo + '</span><br>' +
-        'POWER-UPS: <span class="orange">' + powerups + '</span> &nbsp; ' +
-        'LEVEL: <span class="green">' + level + '</span><br>' +
-        'GRAZES: <span class="red">' + grazes + '</span> &nbsp; ' +
-        'BOMBS DODGED: <span class="cyan">' + bombsDodged + '</span><br>' +
-        'SURVIVED: <span class="cyan">' + Math.floor(secs / 60) + 'M ' + (secs % 60) + 'S</span>';
+        statCell('SNACKS', eaten, 'cyan') +
+        statCell('BEST COMBO', 'x' + bestCombo, 'pink') +
+        statCell('LEVEL', level, 'green') +
+        statCell('POWER-UPS', powerups, 'orange') +
+        statCell('GRAZES', grazes, 'red') +
+        statCell('TIME', Math.floor(secs / 60) + ':' + ('0' + secs % 60).slice(-2), 'gold');
     var rk = rankFor(score);
-    rankLineEl.innerHTML = 'RANK: <span style="color:' + rk[1] + ';text-shadow:0 0 10px ' + rk[1] + '">' + rk[0] + '</span>';
-    newRecordEl.style.display = isRecord ? 'block' : 'none';
-    setTimeout(function() { gameOverOverlay.className = 'overlay show'; }, 500);
+    rankLineEl.innerHTML = 'RANK: <span style="color:' + rk[1] + ';text-shadow:0 0 10px ' + rk[1] + '">' + rk[0] + '</span>' +
+        (isRecord ? ''
+                  : '<br><span style="font-size:9px;color:#7f8fc0;letter-spacing:1px">BEST ' + hiscore +
+                    ' &middot; <span style="color:#ffd23f">' + (hiscore - score + 1) + ' TO BEAT IT</span></span>');
+    newRecordEl.style.display = 'none';
+    var menuBest = document.getElementById('menuBest');
+    if (menuBest) menuBest.textContent = hiscore > 0 ? 'BEST: ' + hiscore : '';
+    setTimeout(function() {
+        gameOverOverlay.className = 'overlay show';
+        // final score ticks up — small ceremony, big satisfaction
+        var fsEl = document.getElementById('finalScore');
+        var t0 = performance.now(), dur = Math.min(1400, 400 + score * 6);
+        (function countUp() {
+            if (state !== 'dead') return;
+            var k = Math.min(1, (performance.now() - t0) / dur);
+            var eased = 1 - Math.pow(1 - k, 3);
+            fsEl.textContent = Math.round(score * eased);
+            if (k < 1) requestAnimationFrame(countUp);
+            else if (isRecord) newRecordEl.style.display = 'block';
+        })();
+    }, 500);
 }
 
 // ============================== EATING ==============================
@@ -713,12 +863,21 @@ function eat(cat, d, mult) {
         comboEl.className = 'show';
         combobarEl.className = 'show';
     }
+    // milestone celebration every 5th combo step: punch + ripple + flourish
+    if (combo >= 5 && combo % 5 === 0) {
+        shake = Math.max(shake, 5 + Math.min(combo * 0.4, 8));
+        ripple(d.x, d.y, '#ff4fd8');
+        ripples.push({ x: d.x, y: d.y, r: 10, color: '#ffd23f', life: 1 });
+        [784, 988, 1319].forEach(function(f, i) {
+            setTimeout(function() { beep(f, 0.09, 'triangle', 0.06, f * 1.25); }, i * 55);
+        });
+    }
     sfxEat(combo);
     cat.squash = 1;
     freezeFrames = Math.max(freezeFrames, 2); // micro hit-stop: makes every bite feel punchy
-    burst(d.x, d.y, d.color || '#fff', 14, 5);
-    floater(d.x, d.y, '+' + pts, d.color || '#fff');
-    ripple(d.x, d.y, d.color || '#fff');
+    burst(d.x, d.y, foodTint(d.color) || '#fff', 14, 5);
+    floater(d.x, d.y, '+' + pts, foodTint(d.color) || '#fff');
+    ripple(d.x, d.y, foodTint(d.color) || '#fff');
 
     // MIRROR SYNC: both cats eat within half a second -> big bonus + light beam
     var me = cat === cat1 ? 'gold' : 'silver';
@@ -843,7 +1002,7 @@ function drawBackground() {
     // twinkling stars
     for (var i = 0; i < stars.length; i++) {
         var st = stars[i];
-        var a = 0.25 + 0.5 * Math.abs(Math.sin(st.tw + frame * 0.02 * st.z));
+        var a = 0.35 + 0.5 * Math.abs(Math.sin(st.tw + frame * 0.02 * st.z));
         ctx.fillStyle = 'rgba(180,200,255,' + a * st.z + ')';
         ctx.fillRect(st.x * W, st.y * H, st.z * 2, st.z * 2);
     }
@@ -878,8 +1037,8 @@ function drawBackground() {
     // mirror axis line through center
     ctx.save();
     ctx.setLineDash([6, 10]);
-    ctx.strokeStyle = 'rgba(255,79,216,0.18)';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,79,216,0.07)'; // decorative only — must not read as a game object
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, H); ctx.lineTo(W, 0);
     ctx.stroke();
@@ -891,20 +1050,22 @@ function drawCat(cat) {
     var sq = cat.squash;
     var sx = 1 + sq * 0.25, sy = 1 - sq * 0.25;
     var speed = Math.sqrt(cat.vx * cat.vx + cat.vy * cat.vy);
+    // invulnerability blink while grace is active
+    var bodyAlpha = (grace > 0 && state === 'playing') ? 0.45 + 0.4 * Math.abs(Math.sin(frame * 0.35)) : 1;
 
     // trail (additive on desktop for a comet-like glow)
     if (!isTouch) ctx.globalCompositeOperation = 'lighter';
     for (var i = 0; i < cat.trail.length; i++) {
         var t = cat.trail[i];
-        var a = (i / cat.trail.length) * (isTouch ? 0.28 : 0.16);
-        ctx.fillStyle = cat.color;
+        var a = (i / cat.trail.length) * (isTouch ? 0.32 : 0.24);
+        ctx.fillStyle = cat.glow; // gold/cyan identity tint, not gray-ghost
         ctx.globalAlpha = a;
         ctx.beginPath();
         ctx.arc(t.x, t.y, r * 0.7 * (i / cat.trail.length), 0, Math.PI * 2);
         ctx.fill();
     }
     ctx.globalCompositeOperation = 'source-over';
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = bodyAlpha;
 
     // tail: short tapered curl peeking from behind the head, gentle sway
     cat.wag += 0.06 + speed * 0.015;
@@ -962,6 +1123,10 @@ function drawCat(cat) {
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, Math.PI * 2);
     ctx.fill();
+    // rim light: separates each cat from the dark background (silver especially)
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = cat.glow;
+    ctx.stroke();
     ctx.shadowBlur = 0;
 
     // inner ears
@@ -990,16 +1155,19 @@ function drawCat(cat) {
         ctx.stroke();
     } else {
         var blinkH = cat.blink > 0 ? 0.5 : 4.5;
+        // pupils track movement direction — the cats feel alive
+        var ex = Math.max(-2.2, Math.min(2.2, cat.vx * 0.45));
+        var ey = Math.max(-1.6, Math.min(1.8, cat.vy * 0.45));
         ctx.fillStyle = '#0a0520';
         ctx.beginPath();
-        ctx.ellipse(-r * 0.38, -r * 0.1, 3.2, blinkH, 0, 0, Math.PI * 2);
-        ctx.ellipse(r * 0.38, -r * 0.1, 3.2, blinkH, 0, 0, Math.PI * 2);
+        ctx.ellipse(-r * 0.38 + ex, -r * 0.1 + ey, 3.2, blinkH, 0, 0, Math.PI * 2);
+        ctx.ellipse(r * 0.38 + ex, -r * 0.1 + ey, 3.2, blinkH, 0, 0, Math.PI * 2);
         ctx.fill();
         if (cat.blink <= 0) {
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
-            ctx.arc(-r * 0.32, -r * 0.2, 1.2, 0, Math.PI * 2);
-            ctx.arc(r * 0.44, -r * 0.2, 1.2, 0, Math.PI * 2);
+            ctx.arc(-r * 0.32 + ex, -r * 0.2 + ey, 1.2, 0, Math.PI * 2);
+            ctx.arc(r * 0.44 + ex, -r * 0.2 + ey, 1.2, 0, Math.PI * 2);
             ctx.fill();
         }
     }
@@ -1031,6 +1199,7 @@ function drawCat(cat) {
     ctx.stroke();
 
     ctx.restore();
+    ctx.globalAlpha = 1;
 
     // shield aura on player cat
     if (shield > 0 && cat === cat1) {
@@ -1072,9 +1241,17 @@ function drawDot(d) {
     ctx.translate(d.x, d.y);
 
     if (d.type === 'food') {
-        var fc = frenzy > 0 ? 'hsl(' + ((frame * 4 + d.phase * 60) % 360) + ',90%,65%)' : d.color;
+        var fc = frenzy > 0 ? 'hsl(' + ((frame * 4 + d.phase * 60) % 360) + ',90%,65%)' : foodTint(d.color);
+        // soft outer halo so dots pop against the dark nebula
+        ctx.strokeStyle = fc;
+        ctx.globalAlpha = alpha * (0.22 + 0.1 * Math.sin(frame * 0.1 + d.phase));
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, d.r * pulse * 1.8, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = alpha;
         ctx.shadowColor = fc;
-        ctx.shadowBlur = 14 * FXQ;
+        ctx.shadowBlur = 20 * FXQ;
         ctx.fillStyle = fc;
         ctx.beginPath();
         ctx.arc(0, 0, d.r * pulse, 0, Math.PI * 2);
@@ -1085,23 +1262,29 @@ function drawDot(d) {
         ctx.arc(-d.r * 0.3, -d.r * 0.3, d.r * 0.28, 0, Math.PI * 2);
         ctx.fill();
     } else if (d.type === 'bomb') {
-        ctx.rotate(frame * 0.06 + d.phase);
         var warn = 0.6 + 0.4 * Math.sin(frame * 0.25);
+        // pulsing red danger halo: the hazard must be the loudest object on screen
+        ctx.strokeStyle = 'rgba(255,51,85,' + (warn * 0.5) + ')';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, d.r * pulse * (2.0 + 0.4 * warn), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.rotate(frame * 0.06 + d.phase);
         ctx.shadowColor = '#ff3355';
-        ctx.shadowBlur = 18 * warn * FXQ;
-        // spikes
-        ctx.fillStyle = '#ff3355';
-        starPath(0, 0, d.r * pulse * 1.35, d.r * pulse * 0.6, 8);
+        ctx.shadowBlur = 30 * warn * FXQ;
+        // spikes — bigger, hotter red
+        ctx.fillStyle = '#ff2244';
+        starPath(0, 0, d.r * pulse * 1.5, d.r * pulse * 0.62, 8);
         ctx.fill();
-        // core
+        // near-black core + hot beating center: classic naval-mine silhouette
         ctx.shadowBlur = 0;
-        ctx.fillStyle = '#33000d';
+        ctx.fillStyle = '#1a0007';
         ctx.beginPath();
-        ctx.arc(0, 0, d.r * pulse * 0.55, 0, Math.PI * 2);
+        ctx.arc(0, 0, d.r * pulse * 0.6, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = 'rgba(255,80,100,' + warn + ')';
+        ctx.fillStyle = 'rgba(255,90,110,' + warn + ')';
         ctx.beginPath();
-        ctx.arc(0, 0, d.r * pulse * 0.22, 0, Math.PI * 2);
+        ctx.arc(0, 0, d.r * pulse * (0.2 + 0.14 * warn), 0, Math.PI * 2);
         ctx.fill();
         // seekers get a rotating targeting reticle so the threat reads instantly
         if (d.homing) {
@@ -1114,12 +1297,25 @@ function drawDot(d) {
             ctx.setLineDash([]);
         }
     } else {
-        ctx.rotate(frame * 0.03 + d.phase);
         var pc = d.type === 'star' ? '#ffd23f' : d.type === 'heart' ? '#ff4fd8'
                : d.type === 'clock' ? '#00f6ff' : d.type === 'magnet' ? '#ff8a00'
                : d.type === 'x2' ? '#ffd23f' : d.type === 'frenzy' ? '#ff4fd8' : '#58ffb1';
+        // bob + double pulsing halo: the prize must outshine ordinary snacks
+        ctx.translate(0, Math.sin(frame * 0.08 + d.phase) * 3);
+        ctx.strokeStyle = pc;
+        ctx.lineWidth = 2.5;
+        ctx.globalAlpha = alpha * (0.4 + 0.22 * Math.sin(frame * 0.13 + d.phase));
+        ctx.beginPath();
+        ctx.arc(0, 0, d.r * pulse * 2.1, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = alpha * (0.25 + 0.15 * Math.sin(frame * 0.13 + d.phase + 1.6));
+        ctx.beginPath();
+        ctx.arc(0, 0, d.r * pulse * 2.7, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = alpha;
+        ctx.rotate(frame * 0.03 + d.phase);
         ctx.shadowColor = pc;
-        ctx.shadowBlur = 20 * FXQ;
+        ctx.shadowBlur = 26 * FXQ;
         ctx.fillStyle = pc;
         if (d.type === 'star') {
             starPath(0, 0, d.r * pulse, d.r * pulse * 0.45, 5);
@@ -1233,14 +1429,20 @@ function tick() {
     if (grace > 0) grace--;
     if (frame % 14 === 0) musicTick();
 
-    multiEl.innerHTML = doubler > 0 ? '&#10039; 2X SCORE' : '';
+    multiEl.innerHTML = doubler > 0 ? '2X SCORE' : '';
 
     // --- spawning --- (a bit sparser on small screens: less room to dodge)
     var small = Math.min(W, H) < 600;
-    var spawnEvery = Math.max(30, Math.floor((110 - level * 9) * (small ? 1.25 : 1)));
+    var spawnEvery = Math.max(30, Math.floor((92 - level * 8) * (small ? 1.25 : 1)));
     if (frame % spawnEvery === 0) spawnDot();
-    if (frame % 600 === 0 && frame > 0) spawnPowerup();
+    if (frame % 600 === 360) spawnPowerup(); // first drop at 6s, then every 10s
     if (level >= 2 && frame % Math.max(240, 560 - level * 40) === 0) spawnBomb();
+    // one telegraphed tutorial bomb at ~8s of level 1: learn the shape cheaply
+    if (frame === 480 && level === 1) spawnBomb();
+    // food density floor: never fewer than ~5 snacks on screen (4 on small)
+    var foodCount = 0;
+    for (var fc = 0; fc < dots.length; fc++) if (dots[fc].type === 'food') foodCount++;
+    if (foodCount < (small ? 4 : 5)) spawnDot();
 
     // --- cats --- (tighter follow on touch so the cat doesn't feel laggy)
     var lf = isTouch ? 0.28 : 0.16;
@@ -1254,7 +1456,7 @@ function tick() {
 
     [cat1, cat2].forEach(function(cat) {
         cat.trail.push({ x: cat.x, y: cat.y });
-        if (cat.trail.length > (isTouch ? 7 : 12)) cat.trail.shift();
+        if (cat.trail.length > (isTouch ? 8 : 16)) cat.trail.shift();
         cat.squash = Math.max(0, cat.squash - 0.08);
         if (cat.blink > 0) cat.blink--;
         else if (Math.random() < 0.004) cat.blink = 8;
@@ -1315,8 +1517,16 @@ function tick() {
         for (var c = 0; c < 2 && !consumed; c++) {
             var cat = cats[c];
             var dx = cat.x - d.x, dy = cat.y - d.y;
-            var er = CATR + 10;
+            // pickup forgiveness on goodies; hazard hitbox unchanged
+            var er = CATR + (d.type === 'bomb' ? 10 : 14);
             var dq = dx * dx + dy * dy;
+            // magnet-lite: matching food inside ~1.6x eat radius drifts to the cat
+            if (d.type === 'food' && (frenzy > 0 || cat.color === d.color) &&
+                dq >= er * er && dq < er * er * 2.56) {
+                var pd = Math.sqrt(dq);
+                d.x += (dx / pd) * 1.1 * timeScale;
+                d.y += (dy / pd) * 1.1 * timeScale;
+            }
             // GRAZE: skim past a bomb without touching it -> risky-play reward
             if (d.type === 'bomb' && !d.grazed && dq >= er * er && dq < (er + 26) * (er + 26)) {
                 d.grazed = true;
@@ -1333,10 +1543,10 @@ function tick() {
                               (d.type === 'food' && frenzy <= 0 && cat.color !== d.color);
                 if (grace > 0 && harmful) continue; // spawn protection: pass through
                 consumed = true;
-                if (d.type === 'bomb') loseLife(d.x, d.y);
+                if (d.type === 'bomb') loseLife(d.x, d.y, cat, 'bomb');
                 else if (d.type !== 'food') grabPowerup(d, d.x, d.y);
                 else if (frenzy > 0 || cat.color === d.color) eat(cat, d, 1);
-                else loseLife(d.x, d.y);
+                else loseLife(d.x, d.y, cat, 'food');
             }
         }
         if (!consumed) alive.push(d);
@@ -1347,7 +1557,14 @@ function tick() {
     if (comboTimer > 0) {
         comboTimer--;
         combofillEl.style.width = (comboTimer / 150 * 100) + '%';
-        if (comboTimer === 0) { combo = 0; comboEl.className = ''; combobarEl.className = ''; }
+        if (comboTimer === 0) {
+            // losing a hot streak should sting a little
+            if (combo >= 5) {
+                sfxComboLost();
+                floater(cat1.x, cat1.y - CATR - 18, 'COMBO LOST', '#7f8fc0');
+            }
+            combo = 0; comboEl.className = ''; combobarEl.className = '';
+        }
     }
 }
 
@@ -1388,10 +1605,11 @@ function render() {
     // ripples
     for (var ri = ripples.length - 1; ri >= 0; ri--) {
         var rp = ripples[ri];
-        rp.r += 4; rp.life -= 0.03;
-        if (rp.life <= 0) { ripples.splice(ri, 1); continue; }
+        if (rp.shrink) { rp.r -= (rp.vr || 2.4); rp.life -= 0.026; } // converging telegraph
+        else { rp.r += 4; rp.life -= 0.03; }
+        if (rp.life <= 0 || rp.r <= 2) { ripples.splice(ri, 1); continue; }
         ctx.strokeStyle = rp.color;
-        ctx.globalAlpha = rp.life * 0.5;
+        ctx.globalAlpha = rp.life * (rp.shrink ? 0.8 : 0.5);
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2);
@@ -1468,6 +1686,38 @@ function render() {
     }
     ctx.globalAlpha = 1;
 
+    // first-run onboarding: if nothing eaten by ~6s, point at the nearest gold dot
+    if (showHint && state === 'playing') {
+        if (eaten > 0) showHint = false;
+        else if (frame > 360) {
+            var hd = null, hq = Infinity;
+            for (var hi = 0; hi < dots.length; hi++) {
+                var hdot = dots[hi];
+                if (hdot.type !== 'food' || hdot.color !== GOLD) continue;
+                var hdx = hdot.x - cat1.x, hdy = hdot.y - cat1.y;
+                var q = hdx * hdx + hdy * hdy;
+                if (q < hq) { hq = q; hd = hdot; }
+            }
+            if (hd) {
+                var ha = 0.5 + 0.35 * Math.sin(frame * 0.12);
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255,210,63,' + ha + ')';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 8]);
+                ctx.beginPath();
+                ctx.moveTo(cat1.x, cat1.y);
+                ctx.lineTo(hd.x, hd.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.font = '10px "Press Start 2P", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = 'rgba(255,210,63,' + ha + ')';
+                ctx.fillText('EAT THE GOLD DOTS', cat1.x, cat1.y - CATR - 26);
+                ctx.restore();
+            }
+        }
+    }
+
     // damage/level flash
     if (flash > 0) {
         ctx.fillStyle = 'rgba(' + flashColor + ',' + flash * 0.35 + ')';
@@ -1480,6 +1730,18 @@ function render() {
     // vignette
     ctx.fillStyle = vigGrad;
     ctx.fillRect(0, 0, W, H);
+
+    // last-life danger: slow red pulse around the screen edge
+    if (state === 'playing' && lives === 1) {
+        var lp = 0.16 + 0.12 * Math.sin(frame * 0.06);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,51,85,' + lp + ')';
+        ctx.lineWidth = 7;
+        ctx.shadowColor = '#ff3355';
+        ctx.shadowBlur = 30 * FXQ;
+        ctx.strokeRect(3, 3, W - 6, H - 6);
+        ctx.restore();
+    }
 
     // combo heat: the screen border glows hotter as the combo climbs
     if (combo >= 5 && state === 'playing') {
@@ -1496,11 +1758,12 @@ function render() {
 
     // --- HUD power tags ---
     var tags = '';
-    if (slowmo > 0)  tags += '<div class="ptag" style="color:#00f6ff;border-color:#00f6ff">&#9200; SLOW-MO ' + Math.ceil(slowmo / 60) + 's</div>';
-    if (shield > 0)  tags += '<div class="ptag" style="color:#58ffb1;border-color:#58ffb1">&#9678; SHIELD READY</div>';
-    if (magnet > 0)  tags += '<div class="ptag" style="color:#ff8a00;border-color:#ff8a00">&#9902; MAGNET ' + Math.ceil(magnet / 60) + 's</div>';
-    if (doubler > 0) tags += '<div class="ptag" style="color:#ffd23f;border-color:#ffd23f">&#10039; 2X ' + Math.ceil(doubler / 60) + 's</div>';
-    if (frenzy > 0)  tags += '<div class="ptag" style="color:#ff4fd8;border-color:#ff4fd8">&#9672; FRENZY ' + Math.ceil(frenzy / 60) + 's</div>';
+    function lowCls(t) { return t < 120 ? ' low' : ''; } // blink in the last 2s
+    if (slowmo > 0)  tags += '<div class="ptag' + lowCls(slowmo) + '" style="color:#00f6ff;border-color:#00f6ff">SLOW-MO ' + Math.ceil(slowmo / 60) + 's</div>';
+    if (shield > 0)  tags += '<div class="ptag" style="color:#58ffb1;border-color:#58ffb1">SHIELD READY</div>';
+    if (magnet > 0)  tags += '<div class="ptag' + lowCls(magnet) + '" style="color:#ff8a00;border-color:#ff8a00">MAGNET ' + Math.ceil(magnet / 60) + 's</div>';
+    if (doubler > 0) tags += '<div class="ptag' + lowCls(doubler) + '" style="color:#ffd23f;border-color:#ffd23f">2X ' + Math.ceil(doubler / 60) + 's</div>';
+    if (frenzy > 0)  tags += '<div class="ptag' + lowCls(frenzy) + '" style="color:#ff4fd8;border-color:#ff4fd8">FRENZY ' + Math.ceil(frenzy / 60) + 's</div>';
     powerbarEl.innerHTML = tags;
 
     // --- touch pulse button: cooldown sweep ---
@@ -1532,7 +1795,7 @@ function render() {
         cat2.x = W - nx1; cat2.y = H - ny1;
         [cat1, cat2].forEach(function(cat) {
             cat.trail.push({ x: cat.x, y: cat.y });
-            if (cat.trail.length > (isTouch ? 7 : 12)) cat.trail.shift();
+            if (cat.trail.length > (isTouch ? 8 : 16)) cat.trail.shift();
             if (cat.blink > 0) cat.blink--;
             else if (Math.random() < 0.004) cat.blink = 8;
         });
