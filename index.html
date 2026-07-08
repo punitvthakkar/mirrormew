@@ -73,6 +73,18 @@
         font-size: max(11px, 1.5vmin); color: #58ffb1; text-shadow: 0 0 10px #58ffb1;
         z-index: 10; pointer-events: none;
     }
+    #timer {
+        position: absolute; top: 42px; left: 50%; transform: translateX(-50%);
+        font-size: max(14px, 2vmin); color: #00f6ff; text-shadow: 0 0 12px #00f6ff;
+        z-index: 10; pointer-events: none;
+    }
+    #timer.urgent { color: #ff3355; text-shadow: 0 0 12px #ff3355; animation: blink .5s step-end infinite; }
+    .modes { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    button.alt {
+        border-color: #00f6ff; color: #00f6ff;
+        text-shadow: 0 0 8px #00f6ff; box-shadow: 0 0 14px rgba(0,246,255,.35);
+    }
+    button.alt:hover { background: #00f6ff; color: #05010f; text-shadow: none; box-shadow: 0 0 28px rgba(0,246,255,.8); }
     #banner {
         position: absolute; top: 34%; left: 50%; transform: translate(-50%,-50%) scale(0);
         font-size: 30px; color: #58ffb1; text-shadow: 0 0 20px #58ffb1, 0 0 60px #58ffb1;
@@ -293,6 +305,7 @@
         </div>
     </div>
     <div id="level">LEVEL 1</div>
+    <div id="timer"></div>
     <div id="banner"></div>
     <div id="combo"></div>
     <div id="combobar"><div id="combofill"></div></div>
@@ -314,7 +327,8 @@
             <div class="rules">
                 <div class="rline"><span id="ctrlRule">MOVE THE MOUSE &mdash; <b class="gold">GOLD CAT</b> FOLLOWS.</span></div>
                 <div class="rline"><b class="cyan">MIRROR CAT</b> COPIES YOU, REVERSED.</div>
-                <div class="rline">EAT YOUR OWN COLOR &middot; DODGE <b class="red"><svg viewBox="0 0 20 20"><path d="M10 0l1.5 6.5L18 4l-4.5 4.5L20 10l-6.5 1.5L16 18l-4.5-4.5L10 20l-1.5-6.5L2 16l4.5-4.5L0 10l6.5-1.5L4 2l4.5 4.5z" fill="#ff3355"/></svg> BOMBS</b></div>
+                <div class="rline">EAT YOUR OWN COLOR &mdash; WRONG COLOR COSTS <b class="red">-5</b></div>
+                <div class="rline">DODGE <b class="red"><svg viewBox="0 0 20 20"><path d="M10 0l1.5 6.5L18 4l-4.5 4.5L20 10l-6.5 1.5L16 18l-4.5-4.5L10 20l-1.5-6.5L2 16l4.5-4.5L0 10l6.5-1.5L4 2l4.5 4.5z" fill="#ff3355"/></svg> BOMBS</b> &mdash; THEY COST A LIFE</div>
                 <div class="rline"><b class="orange" id="pulseHint">CLICK</b> FIRES A SHOCKWAVE PULSE</div>
             </div>
             <div class="divider"></div>
@@ -331,15 +345,18 @@
                 PRO &mdash; <b class="cyan">SYNC</b> BOTH CATS' BITES FOR A BONUS
                 &middot; <b class="red">GRAZE</b> BOMBS FOR POINTS
             </p>
-            <button onclick="startGame()">INSERT COIN</button>
+            <div class="modes">
+                <button onclick="startGame('classic')">CLASSIC</button>
+                <button class="alt" onclick="startGame('sprint')">SPRINT 60s</button>
+            </div>
         </div>
     </div>
 
     <div class="overlay" id="gameOverOverlay">
         <div class="panel">
-            <h2>GAME OVER</h2>
+            <h2 id="goTitle">GAME OVER</h2>
             <div class="finalScore">
-                <div class="fs-label">SCORE</div>
+                <div class="fs-label" id="fsLabel">SCORE</div>
                 <div class="fs-value" id="finalScore">0</div>
             </div>
             <p id="rankLine"></p>
@@ -408,10 +425,21 @@ var state = 'menu';           // menu | playing | dead
 var score = 0, lives = 3, level = 1, frame = 0;
 var combo = 0, comboTimer = 0, bestCombo = 0, eaten = 0;
 var powerups = 0, bombsDodged = 0, recordShown = false;
-var hiscore = 0;
+var hiscore = 0, hiscoreSprint = 0;
 try { hiscore = parseInt(localStorage.getItem('mirrorcat_hiscore')) || 0; } catch (e) {}
+try { hiscoreSprint = parseInt(localStorage.getItem('mirrorcat_hiscore_sprint')) || 0; } catch (e) {}
 hiscoreEl.textContent = hiscore;
-if (hiscore > 0) document.getElementById('menuBest').textContent = 'BEST: ' + hiscore;
+var gameMode = 'classic';           // 'classic' | 'sprint'
+var SPRINT_FRAMES = 60 * 60;        // 60 seconds
+var sprintTime = 0;
+var timerEl = document.getElementById('timer');
+function refreshMenuBest() {
+    var t = [];
+    if (hiscore > 0) t.push('BEST: ' + hiscore);
+    if (hiscoreSprint > 0) t.push('SPRINT: ' + hiscoreSprint);
+    document.getElementById('menuBest').textContent = t.join(' · ');
+}
+refreshMenuBest();
 
 var mouse = { x: W / 2, y: H / 2 };
 var cat1 = { x: W / 2, y: H / 2, color: GOLD, glow: '#ffb300', vx: 0, vy: 0, blink: 0, squash: 0, trail: [], wag: 0 };
@@ -468,6 +496,7 @@ function sfxEat(c)   {
     beep(880 + Math.min(c, 20) * 40, 0.05, 'sine', 0.035, 1400 + c * 40); // sparkle layer
 }
 function sfxComboLost() { beep(392, 0.14, 'sawtooth', 0.05, 180); }
+function sfxSour()   { beep(220, 0.18, 'sawtooth', 0.08, 110); beep(233, 0.18, 'sawtooth', 0.055, 117); } // dissonant minor-second "bleh"
 function sfxPower()  { beep(523, 0.1, 'triangle', 0.1, 1046); setTimeout(function(){ beep(784, 0.15, 'triangle', 0.1, 1568); }, 90); }
 function sfxHurt()   { beep(220, 0.3, 'sawtooth', 0.12, 55); }
 function sfxLevel()  { [523,659,784,1046].forEach(function(f,i){ setTimeout(function(){ beep(f, 0.12, 'square', 0.07); }, i*80); }); }
@@ -514,6 +543,13 @@ function musicTick() {
     }
     // last life: low heartbeat thump under the music
     if (lives === 1 && musicStep % 4 === 2) beep(80, 0.14, 'sine', 0.08, 30);
+    // escalation tiers: busier kit and voices as levels climb
+    if (level >= 3 && musicStep % 4 === 3) noiseHit(0.03, 0.02, true);       // extra 16th hat
+    if (level >= 4 && musicStep % 8 === 4) noiseHit(0.09, 0.035, false);     // low snare on the backbeat
+    if (level >= 5 && musicStep % 4 === 1) {                                  // second arp voice, octave up
+        var n3 = SCALE[(musicStep * 2 + level * 2) % SCALE.length];
+        beep(root * 8 * Math.pow(2, n3 / 12), 0.06, 'triangle', 0.018);
+    }
     // high combo: sparkling counter-melody an octave up
     if (combo >= 8 && musicStep % 4 === 2) {
         var n2 = SCALE[(musicStep * 5 + combo) % SCALE.length];
@@ -717,7 +753,10 @@ function spawnBomb() {
 }
 
 // ============================== GAME FLOW ==============================
-function startGame() {
+function startGame(mode) {
+    gameMode = mode || gameMode; // PLAY AGAIN repeats the last mode
+    sprintTime = SPRINT_FRAMES;
+    hiscoreEl.textContent = gameMode === 'sprint' ? hiscoreSprint : hiscore;
     score = 0; lives = 3; level = 1; frame = 0;
     combo = 0; comboTimer = 0; bestCombo = 0; eaten = 0;
     powerups = 0; bombsDodged = 0; recordShown = false;
@@ -791,6 +830,22 @@ function loseLife(x, y, cat, cause) {
     if (lives <= 0) endGame();
 }
 
+// wrong-color eats are sour, not lethal: -5 points, combo break, brief gray-out
+function sourEat(cat, d) {
+    var pen = 5;
+    score = Math.max(0, score - pen);
+    scoreEl.textContent = score;
+    combo = 0; comboTimer = 0;
+    comboEl.className = ''; combobarEl.className = '';
+    cat.sour = 45; // desaturation timer (~0.75s)
+    freezeFrames = Math.max(freezeFrames, 4);
+    shake = Math.max(shake, 5);
+    sfxSour();
+    burst(d.x, d.y, '#8f96a8', 16, 5);
+    floater(d.x, d.y, 'WRONG COLOR! -' + pen, '#b0b6c8');
+    ripple(d.x, d.y, '#8f96a8');
+}
+
 function rankFor(sc) {
     if (sc >= 400) return ['&#9733; COSMIC LEGEND &#9733;', '#ffd23f'];
     if (sc >= 250) return ['NEON MASTER', '#ff4fd8'];
@@ -800,14 +855,23 @@ function rankFor(sc) {
     return ['SLEEPY FURBALL', '#7f6fff'];
 }
 
-function endGame() {
+function endGame(title) {
     state = 'dead';
     sfxOver();
-    var isRecord = score > hiscore;
+    document.getElementById('goTitle').textContent = title || 'GAME OVER';
+    document.getElementById('fsLabel').textContent = gameMode === 'sprint' ? 'SPRINT SCORE' : 'SCORE';
+    timerEl.textContent = '';
+    var hi = gameMode === 'sprint' ? hiscoreSprint : hiscore;
+    var isRecord = score > hi;
     if (isRecord) {
-        hiscore = score;
-        try { localStorage.setItem('mirrorcat_hiscore', String(hiscore)); } catch (e) {}
-        hiscoreEl.textContent = hiscore;
+        if (gameMode === 'sprint') {
+            hiscoreSprint = score;
+            try { localStorage.setItem('mirrorcat_hiscore_sprint', String(score)); } catch (e) {}
+        } else {
+            hiscore = score;
+            try { localStorage.setItem('mirrorcat_hiscore', String(score)); } catch (e) {}
+        }
+        hiscoreEl.textContent = score;
     }
     var secs = Math.floor(frame / 60);
     document.getElementById('finalScore').textContent = '0';
@@ -825,11 +889,11 @@ function endGame() {
     var rk = rankFor(score);
     rankLineEl.innerHTML = 'RANK: <span style="color:' + rk[1] + ';text-shadow:0 0 10px ' + rk[1] + '">' + rk[0] + '</span>' +
         (isRecord ? ''
-                  : '<br><span style="font-size:9px;color:#7f8fc0;letter-spacing:1px">BEST ' + hiscore +
-                    ' &middot; <span style="color:#ffd23f">' + (hiscore - score + 1) + ' TO BEAT IT</span></span>');
+                  : '<br><span style="font-size:9px;color:#7f8fc0;letter-spacing:1px">' +
+                    (gameMode === 'sprint' ? 'SPRINT ' : '') + 'BEST ' + hi +
+                    ' &middot; <span style="color:#ffd23f">' + (hi - score + 1) + ' TO BEAT IT</span></span>');
     newRecordEl.style.display = 'none';
-    var menuBest = document.getElementById('menuBest');
-    if (menuBest) menuBest.textContent = hiscore > 0 ? 'BEST: ' + hiscore : '';
+    refreshMenuBest();
     setTimeout(function() {
         gameOverOverlay.className = 'overlay show';
         // final score ticks up — small ceremony, big satisfaction
@@ -894,8 +958,9 @@ function eat(cat, d, mult) {
         burst((cat1.x + cat2.x) / 2, (cat1.y + cat2.y) / 2, '#00f6ff', 20, 6);
     }
 
-    // live new-record celebration
-    if (!recordShown && hiscore > 0 && score > hiscore) {
+    // live new-record celebration (per-mode best)
+    var liveHi = gameMode === 'sprint' ? hiscoreSprint : hiscore;
+    if (!recordShown && liveHi > 0 && score > liveHi) {
         recordShown = true;
         banner('NEW RECORD!', '#ffd23f');
         burst(W / 2, H / 3, '#ffd23f', 40, 8);
@@ -1052,6 +1117,9 @@ function drawCat(cat) {
     var speed = Math.sqrt(cat.vx * cat.vx + cat.vy * cat.vy);
     // invulnerability blink while grace is active
     var bodyAlpha = (grace > 0 && state === 'playing') ? 0.45 + 0.4 * Math.abs(Math.sin(frame * 0.35)) : 1;
+    // sour gray-out after a wrong-color eat
+    var bodyCol = cat.sour > 0 ? '#98a0b4' : cat.color;
+    var glowCol = cat.sour > 0 ? '#6b7280' : cat.glow;
 
     // trail (additive on desktop for a comet-like glow)
     if (!isTouch) ctx.globalCompositeOperation = 'lighter';
@@ -1073,9 +1141,9 @@ function drawCat(cat) {
     var sway = Math.sin(cat.wag) * 0.18; // radians of sway at the tip
     ctx.save();
     ctx.translate(cat.x, cat.y);
-    ctx.strokeStyle = cat.color;
+    ctx.strokeStyle = bodyCol;
     ctx.lineCap = 'round';
-    ctx.shadowColor = cat.glow;
+    ctx.shadowColor = glowCol;
     ctx.shadowBlur = 8 * FXQ;
     // sample a quadratic curve, stroking segments with shrinking width for taper
     var bx = tailDir * r * 0.45, by = r * 0.75;                 // base, hidden under chin
@@ -1101,11 +1169,11 @@ function drawCat(cat) {
     ctx.rotate(Math.max(-0.25, Math.min(0.25, cat.vx * 0.02)));
     ctx.scale(sx, sy);
 
-    ctx.shadowColor = frenzy > 0 ? 'hsl(' + ((frame * 6) % 360) + ',90%,60%)' : cat.glow;
+    ctx.shadowColor = frenzy > 0 ? 'hsl(' + ((frame * 6) % 360) + ',90%,60%)' : glowCol;
     ctx.shadowBlur = (22 + speed) * FXQ;
 
     // ears
-    ctx.fillStyle = cat.color;
+    ctx.fillStyle = bodyCol;
     ctx.beginPath();
     ctx.moveTo(-r * 0.85, -r * 0.45);
     ctx.lineTo(-r * 0.95, -r * 1.45);
@@ -1125,7 +1193,7 @@ function drawCat(cat) {
     ctx.fill();
     // rim light: separates each cat from the dark background (silver especially)
     ctx.lineWidth = 2.5;
-    ctx.strokeStyle = cat.glow;
+    ctx.strokeStyle = glowCol;
     ctx.stroke();
     ctx.shadowBlur = 0;
 
@@ -1427,7 +1495,15 @@ function tick() {
     if (doubler > 0) doubler--;
     if (pulseCooldown > 0) pulseCooldown--;
     if (grace > 0) grace--;
-    if (frame % 14 === 0) musicTick();
+    // soundtrack tempo brightens slightly with level (14 -> 11 frames/step)
+    if (frame % Math.max(11, 14 - ((level - 1) >> 1)) === 0) musicTick();
+
+    // SPRINT mode: 60-second countdown
+    if (gameMode === 'sprint') {
+        sprintTime--;
+        if (sprintTime > 0 && sprintTime <= 300 && sprintTime % 60 === 0) beep(1318, 0.07, 'square', 0.05); // last-5s ticks
+        if (sprintTime <= 0) { endGame('TIME UP!'); return; }
+    }
 
     multiEl.innerHTML = doubler > 0 ? '2X SCORE' : '';
 
@@ -1458,6 +1534,7 @@ function tick() {
         cat.trail.push({ x: cat.x, y: cat.y });
         if (cat.trail.length > (isTouch ? 8 : 16)) cat.trail.shift();
         cat.squash = Math.max(0, cat.squash - 0.08);
+        if (cat.sour > 0) cat.sour--;
         if (cat.blink > 0) cat.blink--;
         else if (Math.random() < 0.004) cat.blink = 8;
     });
@@ -1546,7 +1623,7 @@ function tick() {
                 if (d.type === 'bomb') loseLife(d.x, d.y, cat, 'bomb');
                 else if (d.type !== 'food') grabPowerup(d, d.x, d.y);
                 else if (frenzy > 0 || cat.color === d.color) eat(cat, d, 1);
-                else loseLife(d.x, d.y, cat, 'food');
+                else sourEat(cat, d); // softened: -5 + combo break, not a life
             }
         }
         if (!consumed) alive.push(d);
@@ -1755,6 +1832,13 @@ function render() {
         ctx.strokeRect(2, 2, W - 4, H - 4);
         ctx.restore();
     }
+
+    // --- sprint countdown HUD ---
+    if (gameMode === 'sprint' && state === 'playing') {
+        var tsec = Math.max(0, Math.ceil(sprintTime / 60));
+        timerEl.textContent = Math.floor(tsec / 60) + ':' + ('0' + tsec % 60).slice(-2);
+        timerEl.className = tsec <= 10 ? 'urgent' : '';
+    } else if (timerEl.textContent) timerEl.textContent = '';
 
     // --- HUD power tags ---
     var tags = '';
