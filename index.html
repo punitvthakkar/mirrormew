@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Mirror Cat — Neon Arcade</title>
+<title>Mirror Mew</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M20 30 L35 10 L45 35 Z' fill='%23ffb6c1'/%3E%3Cpath d='M80 30 L65 10 L55 35 Z' fill='%23ffb6c1'/%3E%3Ccircle cx='50' cy='55' r='38' fill='%23ff9a56'/%3E%3Cpath d='M20 30 L37 15 L42 38 Z' fill='%23ff9a56'/%3E%3Cpath d='M80 30 L63 15 L58 38 Z' fill='%23ff9a56'/%3E%3Ccircle cx='36' cy='50' r='5' fill='%23222'/%3E%3Ccircle cx='64' cy='50' r='5' fill='%23222'/%3E%3Cpath d='M46 63 Q50 68 54 63' stroke='%23222' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3Cpath d='M50 58 L46 63 L54 63 Z' fill='%23222'/%3E%3Cline x1='10' y1='58' x2='30' y2='55' stroke='%23222' stroke-width='2'/%3E%3Cline x1='10' y1='66' x2='30' y2='63' stroke='%23222' stroke-width='2'/%3E%3Cline x1='90' y1='58' x2='70' y2='55' stroke='%23222' stroke-width='2'/%3E%3Cline x1='90' y1='66' x2='70' y2='63' stroke='%23222' stroke-width='2'/%3E%3C/svg%3E">
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -343,8 +344,7 @@
 
     <div class="overlay show" id="startOverlay">
         <div class="panel">
-            <h1>MIRROR CAT</h1>
-            <p class="tagline">NEON ARCADE EDITION</p>
+            <h1>MIRROR MEW</h1>
             <p id="menuBest" style="font-size:9px;color:#ffd23f;text-shadow:0 0 8px rgba(255,210,63,.5);margin:10px 0 0;letter-spacing:2px;"></p>
             <div class="divider"></div>
             <p class="choosehdr">CHOOSE YOUR CAT</p>
@@ -369,7 +369,7 @@
             <h2>HOW TO PLAY</h2>
             <div class="rules">
                 <div class="rline"><span id="ctrlRule">MOVE THE MOUSE &mdash; <b class="gold">GOLD CAT</b> FOLLOWS.</span></div>
-                <div class="rline"><b class="cyan">MIRROR CAT</b> COPIES YOU, REVERSED.</div>
+                <div class="rline"><b class="cyan">MIRROR MEW</b> COPIES YOU, REVERSED.</div>
                 <div class="rline">EAT YOUR OWN COLOR &mdash; WRONG COLOR COSTS <b class="red">-5</b></div>
                 <div class="rline">DODGE <b class="red"><svg viewBox="0 0 20 20"><path d="M10 0l1.5 6.5L18 4l-4.5 4.5L20 10l-6.5 1.5L16 18l-4.5-4.5L10 20l-1.5-6.5L2 16l4.5-4.5L0 10l6.5-1.5L4 2l4.5 4.5z" fill="#ff3355"/></svg> BOMBS</b> &mdash; THEY COST A LIFE</div>
                 <div class="rline"><b class="orange" id="pulseHint">CLICK</b> FIRES A SHOCKWAVE PULSE</div>
@@ -901,7 +901,7 @@ function loseLife(x, y, cat, cause) {
     shake = 18; flash = 0.55; flashColor = '255,60,90';
     burst(x, y, '#ff3355', 36, 8);
     // say exactly WHICH cat hit WHAT, at the collision point
-    var who = cat === cat2 ? 'MIRROR CAT' : 'GOLD CAT';
+    var who = cat === cat2 ? 'MIRROR MEW' : 'GOLD CAT';
     var what = cause === 'food' ? 'ATE WRONG COLOR!' : 'HIT A BOMB!';
     floater(x, y, who + ' ' + what, '#ff3355');
     // attention cue: big ring converging on the collision (vital for off-focus mirror hits)
