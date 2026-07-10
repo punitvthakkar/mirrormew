@@ -549,6 +549,7 @@ try { selChar = Math.min(3, Math.max(0, parseInt(localStorage.getItem('mirrorcat
 var dots = [], particles = [], floaters = [], stars = [], ripples = [], shooters = [];
 var shake = 0, flash = 0, flashColor = '255,79,216';
 var slowmo = 0, shield = 0, magnet = 0, frenzy = 0, doubler = 0;
+var frenzyBlast = 0, frenzyBlastX = 0, frenzyBlastY = 0; // activation shockwave
 var pulseCooldown = 0, pulseWaves = [];
 var paused = false, muted = false;
 var grace = 0; // spawn-protection frames after a big touch jump
@@ -1163,8 +1164,13 @@ function grabPowerup(d, x, y) {
         sfxFrenzy();
         burst(x, y, '#ff4fd8', 30, 8);
         burst(x, y, '#00f6ff', 20, 6);
-        banner('FRENZY!', '#ff4fd8');
-        floater(x, y, 'EAT EVERYTHING!', '#ff4fd8');
+        // the banner carries the INSTRUCTION, not the jargon
+        banner('EAT EVERYTHING!', '#ff4fd8');
+        floater(x, y, 'FRENZY!', '#ff4fd8');
+        // full-screen rainbow shockwave: unmissable "the rules just changed" cue
+        frenzyBlast = 1; frenzyBlastX = x; frenzyBlastY = y;
+        flash = 0.45; flashColor = '255,79,216';
+        shake = Math.max(shake, 10);
     }
 }
 
@@ -1181,6 +1187,12 @@ function drawBackground() {
         ctx.fillStyle = bgGrad;
     }
     ctx.fillRect(0, 0, W, H);
+    // mobile can't afford the per-frame gradient above, but frenzy still has
+    // to transform the whole canvas: flat hue-cycling tint is nearly free
+    if (frenzy > 0 && isTouch) {
+        ctx.fillStyle = 'hsla(' + ((frame * 3) % 360) + ',70%,45%,0.10)';
+        ctx.fillRect(0, 0, W, H);
+    }
 
     // aurora nebula blobs (skipped on mobile — per-frame gradients + 'lighter' compositing are slow there)
     if (!isTouch) {
@@ -1849,6 +1861,28 @@ function render() {
         ctx.stroke();
     }
 
+    // frenzy activation: one huge rainbow ring sweeps the entire screen
+    if (frenzyBlast > 0) {
+        var fbr = (1 - frenzyBlast) * Math.max(W, H) * 1.3 + 30;
+        var fbHue = (frame * 6) % 360;
+        ctx.save();
+        ctx.strokeStyle = 'hsla(' + fbHue + ',95%,65%,' + frenzyBlast * 0.9 + ')';
+        ctx.lineWidth = 4 + 12 * frenzyBlast;
+        ctx.shadowColor = 'hsl(' + fbHue + ',95%,65%)';
+        ctx.shadowBlur = 30 * FXQ;
+        ctx.beginPath();
+        ctx.arc(frenzyBlastX, frenzyBlastY, fbr, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = 'rgba(255,255,255,' + frenzyBlast * 0.7 + ')';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(frenzyBlastX, frenzyBlastY, fbr * 0.88, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+        frenzyBlast -= 0.022; // ~0.75s sweep
+    }
+
     // ripples
     for (var ri = ripples.length - 1; ri >= 0; ri--) {
         var rp = ripples[ri];
@@ -1990,10 +2024,25 @@ function render() {
         ctx.restore();
     }
 
+    // frenzy: pulsing rainbow border for the WHOLE duration — the world is
+    // visibly in a different mode on every device; fades out as it ends
+    if (frenzy > 0 && state === 'playing') {
+        var fba = Math.min(1, frenzy / 90);
+        var fbh = (frame * 4) % 360;
+        ctx.save();
+        ctx.strokeStyle = 'hsla(' + fbh + ',95%,62%,' + fba * (0.5 + 0.2 * Math.sin(frame * 0.2)) + ')';
+        ctx.lineWidth = 6 + 3 * Math.sin(frame * 0.2);
+        ctx.shadowColor = 'hsl(' + fbh + ',95%,62%)';
+        ctx.shadowBlur = 34 * FXQ;
+        ctx.strokeRect(3, 3, W - 6, H - 6);
+        ctx.restore();
+    }
+
     // combo heat: the screen border glows hotter as the combo climbs
-    if (combo >= 5 && state === 'playing') {
+    // (frenzy's own border owns the edge while it's active)
+    if (combo >= 5 && state === 'playing' && frenzy <= 0) {
         var heat = Math.min((combo - 4) / 16, 1);
-        var hcol = frenzy > 0 ? ((frame * 3) % 360) : 315 - heat * 40; // pink -> orange
+        var hcol = 315 - heat * 40; // pink -> orange
         ctx.save();
         ctx.strokeStyle = 'hsla(' + hcol + ',95%,62%,' + (0.25 + heat * 0.4 + 0.12 * Math.sin(frame * 0.15)) + ')';
         ctx.lineWidth = 3 + heat * 5;
