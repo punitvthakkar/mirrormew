@@ -238,7 +238,16 @@
         background: rgba(3,1,14,.55); letter-spacing: 6px;
     }
     #pausedTag small { font-size: 9px; color: #7f6fff; letter-spacing: 2px; }
-    #pausedTag.show { display: flex; }
+    #pausedTag.show { display: flex; pointer-events: auto; }
+    #pausedTag .modes { letter-spacing: normal; }
+    #pausedTag .modes button { margin-top: 6px; }
+    body.touch #pausedTag small { display: none; }
+
+    button:disabled { opacity: .35; pointer-events: none; }
+    button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+    .keyhint { font-size: 7px; color: #7f8fc0; letter-spacing: 2px; margin: 16px 0 0; line-height: 1.9; }
+    .keyhint b { font-size: 7px; color: #bcd6ff; }
+    body.touch .keyhint { display: none; }
 
     /* ---------- Touch controls (shown only on touch devices) ---------- */
     #pulsebtn {
@@ -334,8 +343,15 @@
     <div id="combo"></div>
     <div id="combobar"><div id="combofill"></div></div>
     <div id="powerbar"></div>
-    <div id="mutehint">[CLICK] PULSE<br>[M] SOUND &nbsp; [P] PAUSE</div>
-    <div id="pausedTag">PAUSED<small>PRESS P OR SPACE TO RESUME</small></div>
+    <div id="mutehint">[CLICK] PULSE<br>[M] SOUND &nbsp; [P/ESC] PAUSE</div>
+    <div id="pausedTag">PAUSED
+        <div class="modes">
+            <button onclick="togglePause()">RESUME</button>
+            <button class="alt" onclick="startGame()">RESTART</button>
+            <button class="mini" onclick="quitToMenu()">MENU</button>
+        </div>
+        <small>P / SPACE / ESC &mdash; RESUME</small>
+    </div>
     <div id="pulsebtn">PULSE</div>
     <div id="touchui">
         <div class="tbtn" id="pausebtn">&#10074;&#10074;</div>
@@ -361,6 +377,7 @@
                 <button class="alt" onclick="startGame('sprint')">SPRINT 60s</button>
                 <button class="mini" onclick="toggleInfo(true)">&#9432; INFO</button>
             </div>
+            <p class="keyhint"><b>ENTER</b> PLAY &nbsp;&middot;&nbsp; <b>&#8592;/&#8594;</b> CHOOSE CAT &nbsp;&middot;&nbsp; <b>I</b> INFO</p>
         </div>
     </div>
 
@@ -404,7 +421,11 @@
             <p id="newRecord"><span class="sym">&#9733;</span> NEW HI-SCORE <span class="sym">&#9733;</span></p>
             <div class="divider"></div>
             <div class="stats" id="finalStats"></div>
-            <button onclick="startGame()">PLAY AGAIN</button>
+            <div class="modes">
+                <button id="playAgainBtn" onclick="startGame()">PLAY AGAIN</button>
+                <button class="mini" onclick="quitToMenu()">MENU</button>
+            </div>
+            <p class="keyhint"><b>ENTER</b> PLAY AGAIN &nbsp;&middot;&nbsp; <b>ESC</b> MENU</p>
         </div>
     </div>
 
@@ -430,6 +451,7 @@ var finalStatsEl = document.getElementById('finalStats');
 var rankLineEl = document.getElementById('rankLine');
 var newRecordEl = document.getElementById('newRecord');
 var pausedTag = document.getElementById('pausedTag');
+var playAgainBtn = document.getElementById('playAgainBtn');
 
 // touch device? (coarse pointer) — enables touch UI + performance mode
 var isTouch = false;
@@ -667,11 +689,33 @@ window.addEventListener('touchcancel', function() { lastTouch = null; });
 window.addEventListener('mousedown', function() { if (!isTouch) firePulse(); });
 window.addEventListener('keydown', function(e) {
     var k = e.key.toLowerCase();
+    var infoOpen = infoOverlay.className.indexOf('show') >= 0;
+    var overShown = gameOverOverlay.className.indexOf('show') >= 0;
     if (k === 'm') toggleMute();
+    if (k === 'escape') {
+        if (infoOpen) toggleInfo(false);            // back out of info first
+        else if (state === 'playing') togglePause(); // esc pauses / resumes
+        else if (state === 'dead' && overShown) quitToMenu();
+        return;
+    }
     if ((k === 'p' || k === ' ') && state === 'playing') {
         togglePause();
         if (e.key === ' ') e.preventDefault();
     }
+    // a focused <button> already handles Enter natively — don't double-fire
+    if (k === 'enter' && document.activeElement && document.activeElement.tagName === 'BUTTON') return;
+    if (state === 'menu' && !infoOpen) {
+        if (k === 'arrowleft')  { selectChar((selChar + CHARACTERS.length - 1) % CHARACTERS.length); e.preventDefault(); }
+        if (k === 'arrowright') { selectChar((selChar + 1) % CHARACTERS.length); e.preventDefault(); }
+        if (k === 'i') toggleInfo(true);
+        if (k === 'enter') startGame(gameMode);
+    }
+    if (state === 'dead' && k === 'enter' && overShown && !playAgainBtn.disabled) startGame();
+});
+
+// auto-pause when the tab/app loses focus — never die off-screen
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden && state === 'playing' && !paused) togglePause();
 });
 
 function togglePause() {
@@ -680,11 +724,15 @@ function togglePause() {
     pausedTag.className = paused ? 'show' : '';
     pausebtnEl.innerHTML = paused ? '&#9654;' : '&#10074;&#10074;';
 }
-function toggleMute() {
-    muted = !muted;
+function applyMuteUI() {
     document.getElementById('mutehint').style.color = muted ? 'rgba(255,80,80,.6)' : 'rgba(255,255,255,.35)';
     mutebtnEl.className = muted ? 'tbtn off' : 'tbtn';
     mutebtnEl.innerHTML = muted ? '&#215;' : '&#9835;';
+}
+function toggleMute() {
+    muted = !muted;
+    try { localStorage.setItem('mirrorcat_muted', muted ? '1' : '0'); } catch (e) {}
+    applyMuteUI();
 }
 
 // touch buttons
@@ -699,10 +747,13 @@ onTap(pulsebtnEl, firePulse);
 onTap(pausebtnEl, togglePause);
 onTap(mutebtnEl, toggleMute);
 
+// restore persisted mute preference
+try { muted = localStorage.getItem('mirrorcat_muted') === '1'; } catch (e) {}
+applyMuteUI();
+
 if (isTouch) {
     document.getElementById('pulseHint').textContent = 'PULSE BUTTON';
     document.getElementById('ctrlRule').innerHTML = 'DRAG ANYWHERE TO STEER <b class="gold">GOLD CAT</b>.';
-    document.querySelector('#pausedTag small').textContent = 'TAP ▶ TO RESUME';
 }
 
 // ============================== HELPERS ==============================
@@ -975,6 +1026,14 @@ function endGame(title) {
     refreshMenuBest();
     setTimeout(function() {
         gameOverOverlay.className = 'overlay show';
+        // brief input lockout: the player may still be click-spamming pulse
+        // when the card appears — don't let that click eat PLAY AGAIN
+        playAgainBtn.disabled = true;
+        setTimeout(function() {
+            if (state !== 'dead') return;
+            playAgainBtn.disabled = false;
+            playAgainBtn.focus(); // Enter restarts; keyboard users land on the primary action
+        }, 700);
         // final score ticks up — small ceremony, big satisfaction
         var fsEl = document.getElementById('finalScore');
         var t0 = performance.now(), dur = Math.min(1400, 400 + score * 6);
@@ -1993,6 +2052,25 @@ selectChar(selChar);
 function toggleInfo(on) {
     infoOverlay.className = on ? 'overlay show' : 'overlay';
 }
+// clicking the dark backdrop (not the panel) also dismisses the info card
+infoOverlay.addEventListener('mousedown', function(e) { if (e.target === infoOverlay) toggleInfo(false); });
+
+// back to the title card from pause or the game-over screen
+function quitToMenu() {
+    state = 'menu';
+    paused = false;
+    pausedTag.className = '';
+    gameOverOverlay.className = 'overlay';
+    bannerEl.className = '';
+    comboEl.className = ''; combobarEl.className = '';
+    timerEl.textContent = '';
+    powerbarEl.innerHTML = '';
+    pausebtnEl.innerHTML = '&#10074;&#10074;';
+    hiscoreEl.textContent = hiscore;
+    refreshMenuBest();
+    startOverlay.className = 'overlay show';
+    requestAnimationFrame(menuLoop);
+}
 
 // live previews inside the select cards: the chosen cat runs (gold), the rest walk (silver)
 (function charPreviewLoop() {
@@ -2032,7 +2110,8 @@ function toggleInfo(on) {
 
 // idle menu animation behind start screen: the two cats chase each other
 // in a mirrored orbit so the core mechanic is visible before you even play
-(function menuLoop() {
+// (named + guarded so quitToMenu() can restart it)
+function menuLoop() {
     if (state === 'menu') {
         frame++;
         drawBackground();
@@ -2053,7 +2132,8 @@ function toggleInfo(on) {
         drawCat(cat1);
         requestAnimationFrame(menuLoop);
     }
-})();
+}
+menuLoop();
 </script>
 </body>
 </html>
