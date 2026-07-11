@@ -343,26 +343,69 @@
 
     /* ---------- Small screens ---------- */
     @media (max-width: 560px) {
-        .panel { padding: 24px 18px; }
+        .overlay {
+            padding: calc(10px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right))
+                     calc(10px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));
+            /* top-align + margin:auto on the panel: a tall menu scrolls from its top
+               instead of clipping the title above the viewport */
+            align-items: flex-start;
+        }
+        .panel { padding: 20px 12px; width: 100%; max-width: 100%; }
         .panel h1 { font-size: 20px; }
         .panel h2 { font-size: 18px; }
         .panel p { font-size: 8px; }
+        .tagline { letter-spacing: 2px; }
         .rules, .rules b { font-size: 8px; }
         .chip { font-size: 7px; padding: 7px 8px; }
         .chips { gap: 6px; }
-        .divider { margin: 14px auto; }
+        .divider { margin: 12px auto; }
         .stats { gap: 12px 18px; }
         .stat .val { font-size: 11px; }
         .finalScore .fs-value { font-size: 26px; }
         .protip { font-size: 7px; }
-        button { padding: 14px 24px; font-size: 11px; }
+        button { padding: 14px 18px; font-size: 11px; margin-top: 12px; }
+        button:hover { transform: none; } /* sticky :hover on touch — no scale jump */
+
+        /* entry menu: cats in a 2x2 grid that fits the screen */
+        .charrow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; max-width: 300px; margin: 0 auto; }
+        .charcard { width: auto; padding: 6px 4px 6px; }
+        .charcard canvas { width: 76px; height: 52px; }
+        #charStory { font-size: 7px; line-height: 1.9; min-height: 42px; margin-top: 10px; padding: 0 4px; }
+        #charStory b { font-size: 8px; }
+
+        /* world chips: tighter so they wrap into neat rows */
+        .worldrow { gap: 6px; }
+        .wchip { font-size: 7px; padding: 7px 8px; }
+        #worldHint { font-size: 6px; }
+
+        /* mode buttons: stacked full-width — easy thumb targets, no text overflow */
+        .modes { flex-direction: column; gap: 0; align-items: stretch; }
+        .modes button { width: 100%; margin-top: 10px; padding: 15px 10px; }
+        .modes button.mini { padding: 12px 10px; font-size: 9px; }
+        /* pause + game-over keep the compact row layout for their small buttons */
+        #pausedTag .modes { flex-direction: row; align-items: center; justify-content: center; gap: 10px; }
+        #pausedTag .modes button { width: auto; padding: 12px 14px; font-size: 9px; }
+
+        #streakLine { font-size: 7px; letter-spacing: 1px; }
+        #menuBest { font-size: 7px !important; letter-spacing: 1px !important; }
+
+        #achToast { width: min(300px, calc(100vw - 32px)); }
+
         #score { font-size: 16px; }
         #hiscore { font-size: 10px; }
-        #hud { padding: 12px 14px; }
-        #level { font-size: 9px; top: 14px; }
+        #hud { padding: calc(10px + env(safe-area-inset-top)) 14px 12px; }
+        #level { font-size: 9px; top: calc(12px + env(safe-area-inset-top)); }
+        #timer { top: calc(38px + env(safe-area-inset-top)); }
         #banner { font-size: 20px; }
-        #combo { font-size: 10px; top: 62px; }
-        #combobar { top: 80px; width: 120px; }
+        #combo { font-size: 10px; top: calc(60px + env(safe-area-inset-top)); }
+        #combobar { top: calc(78px + env(safe-area-inset-top)); width: 120px; }
+    }
+
+    /* very narrow phones: single-column mode list already applies; shrink title further */
+    @media (max-width: 360px) {
+        .panel h1 { font-size: 16px; }
+        .charrow { gap: 6px; }
+        .charcard canvas { width: 64px; height: 44px; }
     }
 </style>
 </head>
