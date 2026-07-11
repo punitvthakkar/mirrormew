@@ -120,6 +120,8 @@
         align-items: center; justify-content: center;
         background: radial-gradient(ellipse at center, rgba(10,4,40,.82) 0%, rgba(3,1,14,.95) 100%);
         overflow-y: auto; padding: 16px 10px;
+        /* the game root sets touch-action:none — menus must opt back in to scroll */
+        touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
     }
     .overlay.show { display: flex; }
     .panel {
@@ -341,18 +343,23 @@
         .stats { gap: 10px 24px; }
     }
 
-    /* ---------- Small screens ---------- */
+    /* ---------- Small screens: menus become full-screen scrollable sheets ---------- */
     @media (max-width: 560px) {
         .overlay {
-            padding: calc(10px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right))
-                     calc(10px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));
+            padding: 0;
             /* top-align + margin:auto on the panel: a tall menu scrolls from its top
                instead of clipping the title above the viewport */
             align-items: flex-start;
         }
-        .panel { padding: 20px 12px; width: 100%; max-width: 100%; }
-        .panel h1 { font-size: 20px; }
-        .panel h2 { font-size: 18px; }
+        /* edge-to-edge sheet: no floating box to overflow, the whole screen IS the menu */
+        .panel {
+            width: 100%; max-width: 100%; min-height: 100%;
+            border: none; border-radius: 0; box-shadow: none;
+            padding: calc(18px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right))
+                     calc(24px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
+        }
+        .panel h1 { font-size: 19px; }
+        .panel h2 { font-size: 17px; }
         .panel p { font-size: 8px; }
         .tagline { letter-spacing: 2px; }
         .rules, .rules b { font-size: 8px; }
@@ -363,33 +370,34 @@
         .stat .val { font-size: 11px; }
         .finalScore .fs-value { font-size: 26px; }
         .protip { font-size: 7px; }
-        button { padding: 14px 18px; font-size: 11px; margin-top: 12px; }
+        button { padding: 13px 16px; font-size: 11px; margin-top: 12px; }
         button:hover { transform: none; } /* sticky :hover on touch — no scale jump */
 
-        /* entry menu: cats in a 2x2 grid that fits the screen */
-        .charrow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; max-width: 300px; margin: 0 auto; }
-        .charcard { width: auto; padding: 6px 4px 6px; }
-        .charcard canvas { width: 76px; height: 52px; }
-        #charStory { font-size: 7px; line-height: 1.9; min-height: 42px; margin-top: 10px; padding: 0 4px; }
+        /* cats: one compact 4-across row — half the height of stacked cards */
+        .charrow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+        .charcard { width: auto; padding: 5px 2px; }
+        .charcard canvas { width: 100%; max-width: 66px; height: 44px; }
+        .charname { font-size: 7px; margin-top: 4px; }
+        #charStory { font-size: 7px; line-height: 1.8; min-height: 38px; margin-top: 10px; padding: 0 2px; }
         #charStory b { font-size: 8px; }
 
-        /* world chips: tighter so they wrap into neat rows */
         .worldrow { gap: 6px; }
         .wchip { font-size: 7px; padding: 7px 8px; }
         #worldHint { font-size: 6px; }
 
-        /* mode buttons: stacked full-width — easy thumb targets, no text overflow */
+        /* primary modes: stacked full-width thumb targets; FEATS/INFO share one row */
         .modes { flex-direction: column; gap: 0; align-items: stretch; }
-        .modes button { width: 100%; margin-top: 10px; padding: 15px 10px; }
-        .modes button.mini { padding: 12px 10px; font-size: 9px; }
-        /* pause + game-over keep the compact row layout for their small buttons */
+        .modes button { width: 100%; margin-top: 10px; padding: 14px 10px; }
+        .modes.minirow { flex-direction: row; gap: 8px; }
+        .modes.minirow button { width: auto; flex: 1; padding: 11px 6px; font-size: 9px; }
+        /* pause keeps its compact row of small buttons */
         #pausedTag .modes { flex-direction: row; align-items: center; justify-content: center; gap: 10px; }
         #pausedTag .modes button { width: auto; padding: 12px 14px; font-size: 9px; }
 
         #streakLine { font-size: 7px; letter-spacing: 1px; }
         #menuBest { font-size: 7px !important; letter-spacing: 1px !important; }
-
-        #achToast { width: min(300px, calc(100vw - 32px)); }
+        #achToast { width: min(300px, calc(100vw - 32px)); top: calc(60px + env(safe-area-inset-top)); }
+        .achgrid { gap: 6px; }
 
         #score { font-size: 16px; }
         #hiscore { font-size: 10px; }
@@ -401,11 +409,11 @@
         #combobar { top: calc(78px + env(safe-area-inset-top)); width: 120px; }
     }
 
-    /* very narrow phones: single-column mode list already applies; shrink title further */
+    /* very narrow phones */
     @media (max-width: 360px) {
         .panel h1 { font-size: 16px; }
-        .charrow { gap: 6px; }
-        .charcard canvas { width: 64px; height: 44px; }
+        .charrow { gap: 4px; }
+        .charcard canvas { height: 38px; }
     }
 </style>
 </head>
@@ -469,7 +477,7 @@
                 <button onclick="startGame('classic')">CLASSIC</button>
                 <button class="alt" onclick="startGame('sprint')">SPRINT 60s</button>
             </div>
-            <div class="modes" style="margin-top:2px">
+            <div class="modes minirow" style="margin-top:2px">
                 <button class="mini" id="featsBtn" onclick="toggleAch(true)">FEATS</button>
                 <button class="mini" onclick="toggleInfo(true)">&#9432; INFO</button>
             </div>
@@ -1520,6 +1528,8 @@ window.addEventListener('touchstart', function(e) {
     lastTouch = { id: t.identifier, x: t.clientX, y: t.clientY };
 }, { passive: true });
 window.addEventListener('touchmove', function(e) {
+    // touches that start inside a menu overlay must scroll it, not steer the cat
+    if (e.target.closest && e.target.closest('.overlay,#pausedTag')) return;
     e.preventDefault();
     var t = e.touches[0];
     if (!lastTouch || lastTouch.id !== t.identifier) {
