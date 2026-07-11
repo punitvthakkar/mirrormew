@@ -178,6 +178,9 @@
     .sym { font-style: normal; font-family: -apple-system, 'Segoe UI Symbol', 'Noto Sans Symbols 2', sans-serif; }
     /* icons are inline SVG (fancy unicode glyphs tofu on many systems) */
     .chip svg, .rules svg { width: 11px; height: 11px; margin-right: 5px; vertical-align: -2px; }
+    .wchip svg, .achitem svg, #streakLine svg, #achToast svg { width: 11px; height: 11px; margin-right: 5px; vertical-align: -2px; }
+    .modes button svg { width: 13px; height: 13px; margin-right: 6px; vertical-align: -2px; }
+    .panel h2 svg { width: 20px; height: 20px; margin-right: 8px; vertical-align: -2px; }
     .protip { font-size: 8px; line-height: 1.9; color: #7f8fc0; margin: 18px 0 0; letter-spacing: 1px; }
     .protip b { font-size: 8px; }
 
@@ -194,6 +197,20 @@
     .charcard canvas { width: 84px; height: 58px; display: block; margin: 0 auto; }
     .charname { font-size: 8px; letter-spacing: 1px; color: #7f8fc0; margin-top: 6px; }
     .charcard.sel .charname { color: #ffd23f; text-shadow: 0 0 6px rgba(255,210,63,.5); }
+
+    /* ---------- World select ---------- */
+    .worldrow { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; max-width: 520px; margin: 0 auto; }
+    .wchip {
+        font-size: 8px; line-height: 1; padding: 8px 10px; letter-spacing: 1px;
+        border: 1px solid rgba(127,143,192,.4); border-radius: 20px;
+        color: #bcd6ff; background: rgba(255,255,255,.03); cursor: pointer;
+        transition: border-color .15s, box-shadow .15s;
+    }
+    .wchip:hover { border-color: rgba(88,255,177,.6); }
+    .wchip.sel { border-color: #58ffb1; color: #58ffb1; text-shadow: 0 0 6px rgba(88,255,177,.5); box-shadow: 0 0 12px rgba(88,255,177,.25); }
+    .wchip.locked { opacity: .35; cursor: default; }
+    .wchip.locked:hover { border-color: rgba(127,143,192,.4); }
+    #worldHint { font-size: 7px; color: #7f8fc0; letter-spacing: 1px; margin: 10px 0 0; }
     #charStory { font-size: 8px; line-height: 2; color: #9aa6c8; max-width: 430px; margin: 14px auto 0; min-height: 48px; letter-spacing: .5px; }
     #charStory b { font-size: 9px; color: #ffd23f; text-shadow: 0 0 6px rgba(255,210,63,.4); letter-spacing: 2px; }
     #charStory .ctitle { color: #00f6ff; letter-spacing: 1.5px; }
@@ -203,6 +220,34 @@
     }
     .modes button.mini:hover { background: rgba(127,143,192,.9); color: #05010f; box-shadow: 0 0 18px rgba(127,143,192,.5); }
     #infoOverlay { z-index: 30; }
+    #achOverlay { z-index: 30; }
+
+    /* ---------- Daily / streak / achievements ---------- */
+    button.daily {
+        border-color: #ff4fd8; color: #ff4fd8;
+        text-shadow: 0 0 8px #ff4fd8; box-shadow: 0 0 14px rgba(255,79,216,.35);
+    }
+    button.daily:hover { background: #ff4fd8; color: #05010f; text-shadow: none; box-shadow: 0 0 28px rgba(255,79,216,.8); }
+    #streakLine { font-size: 8px; color: #ff8a00; text-shadow: 0 0 6px rgba(255,138,0,.5); letter-spacing: 2px; margin: 10px 0 0; }
+    #achToast {
+        position: fixed; top: 70px; right: -340px; z-index: 40; width: 300px;
+        border: 2px solid #ffd23f; border-radius: 8px; padding: 14px 16px;
+        background: linear-gradient(180deg, rgba(30,20,4,.97), rgba(14,8,2,.97));
+        box-shadow: 0 0 24px rgba(255,210,63,.4);
+        font-size: 9px; color: #ffd23f; letter-spacing: 1px; line-height: 1.9;
+        transition: right .35s cubic-bezier(.2,1.4,.4,1); pointer-events: none;
+    }
+    #achToast.show { right: 16px; }
+    #achToast .at-title { font-size: 8px; color: #7f8fc0; letter-spacing: 2px; }
+    .achgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-width: 560px; text-align: left; }
+    .achitem {
+        border: 1px solid rgba(127,143,192,.3); border-radius: 6px; padding: 9px 10px;
+        font-size: 8px; line-height: 1.8; color: #bcd6ff; background: rgba(255,255,255,.02);
+    }
+    .achitem b { display: block; font-size: 8px; color: #ffd23f; letter-spacing: 1px; }
+    .achitem.locked { opacity: .38; }
+    .achitem.locked b { color: #7f8fc0; }
+    @media (max-width: 560px) { .achgrid { grid-template-columns: 1fr; } }
 
     /* game-over stats */
     .finalScore { margin: 6px 0 2px; }
@@ -350,7 +395,7 @@
             <button class="alt" onclick="startGame()">RESTART</button>
             <button class="mini" onclick="quitToMenu()">MENU</button>
         </div>
-        <small>P / SPACE / ESC &mdash; RESUME</small>
+        <small>P / SPACE / ESC &middot; RESUME</small>
     </div>
     <div id="pulsebtn">PULSE</div>
     <div id="touchui">
@@ -372,11 +417,20 @@
             </div>
             <div id="charStory"></div>
             <div class="divider"></div>
+            <p class="choosehdr">CHOOSE YOUR WORLD</p>
+            <div class="worldrow" id="worldRow"></div>
+            <p id="worldHint">JOURNEY: A NEW WORLD EVERY 2 LEVELS &middot; VISIT ONE TO UNLOCK IT</p>
+            <div class="divider"></div>
             <div class="modes">
+                <button class="daily" id="dailyBtn" onclick="dailyAction()">DAILY MIRROR</button>
                 <button onclick="startGame('classic')">CLASSIC</button>
                 <button class="alt" onclick="startGame('sprint')">SPRINT 60s</button>
+            </div>
+            <div class="modes" style="margin-top:2px">
+                <button class="mini" id="featsBtn" onclick="toggleAch(true)">FEATS</button>
                 <button class="mini" onclick="toggleInfo(true)">&#9432; INFO</button>
             </div>
+            <p id="streakLine"></p>
             <p class="keyhint"><b>ENTER</b> PLAY &nbsp;&middot;&nbsp; <b>&#8592;/&#8594;</b> CHOOSE CAT &nbsp;&middot;&nbsp; <b>I</b> INFO</p>
         </div>
     </div>
@@ -385,11 +439,12 @@
         <div class="panel">
             <h2>HOW TO PLAY</h2>
             <div class="rules">
-                <div class="rline"><span id="ctrlRule">MOVE THE MOUSE &mdash; <b class="gold">GOLD CAT</b> FOLLOWS.</span></div>
+                <div class="rline"><span id="ctrlRule">MOVE THE MOUSE: <b class="gold">GOLD CAT</b> FOLLOWS.</span></div>
                 <div class="rline"><b class="cyan">MIRROR MEW</b> COPIES YOU, REVERSED.</div>
-                <div class="rline">EAT YOUR OWN COLOR &mdash; WRONG COLOR COSTS <b class="red">-5</b></div>
-                <div class="rline">DODGE <b class="red"><svg viewBox="0 0 20 20"><path d="M10 0l1.5 6.5L18 4l-4.5 4.5L20 10l-6.5 1.5L16 18l-4.5-4.5L10 20l-1.5-6.5L2 16l4.5-4.5L0 10l6.5-1.5L4 2l4.5 4.5z" fill="#ff3355"/></svg> BOMBS</b> &mdash; THEY COST A LIFE</div>
+                <div class="rline">EAT YOUR OWN COLOR &middot; WRONG COLOR COSTS <b class="red">-5</b></div>
+                <div class="rline">DODGE <b class="red"><svg viewBox="0 0 20 20"><path d="M10 0l1.5 6.5L18 4l-4.5 4.5L20 10l-6.5 1.5L16 18l-4.5-4.5L10 20l-1.5-6.5L2 16l4.5-4.5L0 10l6.5-1.5L4 2l4.5 4.5z" fill="#ff3355"/></svg> BOMBS</b> &middot; THEY COST A LIFE</div>
                 <div class="rline"><b class="orange" id="pulseHint">CLICK</b> FIRES A SHOCKWAVE PULSE</div>
+                <div class="rline"><b class="green">JOURNEY</b>: A NEW WORLD EVERY 2 LEVELS, EACH WITH ITS OWN PHYSICS</div>
             </div>
             <div class="divider"></div>
             <div class="chips">
@@ -402,13 +457,24 @@
                 <span class="chip" style="border-color:#ff4fd8"><svg viewBox="0 0 20 20"><path d="M10 1l7 9-7 9-7-9z" fill="#ff4fd8"/><circle cx="10" cy="10" r="2.4" fill="#fff"/></svg>FRENZY</span>
             </div>
             <p class="protip">
-                PRO &mdash; <b class="cyan">SYNC</b> BOTH CATS' BITES FOR A BONUS
+                PRO TIP &middot; <b class="cyan">SYNC</b> BOTH CATS' BITES FOR A BONUS
                 &middot; <b class="red">GRAZE</b> BOMBS FOR POINTS
             </p>
             <div class="divider"></div>
             <button onclick="toggleInfo(false)">GOT IT</button>
         </div>
     </div>
+
+    <div class="overlay" id="achOverlay">
+        <div class="panel">
+            <h2 id="achTitle">FEATS</h2>
+            <p id="achCount" style="margin:0 0 14px"></p>
+            <div class="achgrid" id="achGrid"></div>
+            <div class="divider"></div>
+            <button onclick="toggleAch(false)">BACK</button>
+        </div>
+    </div>
+    <div id="achToast"><div class="at-title">FEAT UNLOCKED</div><div id="achToastName"></div></div>
 
     <div class="overlay" id="gameOverOverlay">
         <div class="panel">
@@ -423,6 +489,7 @@
             <div class="stats" id="finalStats"></div>
             <div class="modes">
                 <button id="playAgainBtn" onclick="startGame()">PLAY AGAIN</button>
+                <button class="daily" id="shareBtn" style="display:none" onclick="shareDaily()">SHARE</button>
                 <button class="mini" onclick="quitToMenu()">MENU</button>
             </div>
             <p class="keyhint"><b>ENTER</b> PLAY AGAIN &nbsp;&middot;&nbsp; <b>ESC</b> MENU</p>
@@ -545,6 +612,742 @@ var CHARACTERS = [
 }];
 var selChar = 0;
 try { selChar = Math.min(3, Math.max(0, parseInt(localStorage.getItem('mirrorcat_char')) || 0)); } catch (e) {}
+
+// ============================== WORLDS ==============================
+// journey: a new world every 2 levels; any world you visit unlocks in the menu
+var WORLDS = [
+    { name: 'MIRROR ARENA',         short: 'ARENA',     color: '#7f6fff', sky: null },
+    { name: 'GLOWMOTH MEADOW',      short: 'MEADOW',    color: '#ffd23f', sky: ['#0d1d33', '#071226', '#02050e'] },
+    { name: 'DEEP-SEA GLOW TRENCH', short: 'TRENCH',    color: '#00f6ff', sky: ['#03202e', '#021018', '#010509'] },
+    { name: 'ZERO-G DAIRY NEBULA',  short: 'NEBULA',    color: '#ff4fd8', sky: ['#241448', '#120a2e', '#04010d'] },
+    { name: 'THE GREAT MUSIC BOX',  short: 'MUSIC BOX', color: '#e0b3ff', sky: ['#261335', '#140a26', '#05020f'] },
+    { name: 'CANDY GLACIER',        short: 'GLACIER',   color: '#58ffb1', sky: ['#0e2140', '#081228', '#03060f'] }
+];
+var worldIdx = 0, startWorld = 0, worldMask = 1;
+try { worldMask = parseInt(localStorage.getItem('mirrorcat_worlds')) || 1; } catch (e) {}
+try { startWorld = Math.min(5, Math.max(0, parseInt(localStorage.getItem('mirrorcat_worldstart')) || 0)); } catch (e) {}
+if (!(worldMask & (1 << startWorld))) startWorld = 0;
+worldIdx = startWorld;
+
+// static scenery layouts (normalized coords; trimmed on touch for perf)
+var SCN = (function() {
+    function many(n, fn) { var a = [], m = isTouch ? Math.ceil(n * 0.6) : n; for (var i = 0; i < m; i++) a.push(fn(i)); return a; }
+    return {
+        grass:   many(70, function() { return { x: Math.random(), y: rand2(.8, 1), h: rand2(18, 52), ph: rand2(0, 6.28) }; }),
+        hills:   many(9, function(i) { return { x: i / 8, h: rand2(.1, .22) }; }),
+        flowers: [{ x: .18, y: .76, ph: 0 }, { x: .82, y: .76, ph: Math.PI }], // [0]=gold, [1]=silver
+        kelp:    many(9, function() { return { x: rand2(.02, .98), h: rand2(.25, .55), ph: rand2(0, 6.28) }; }),
+        jellies: many(4, function() { return { x: rand2(.1, .9), y: rand2(.1, .5), ph: rand2(0, 6.28), r: rand2(10, 18) }; }),
+        cow:     [[.10, .10], [.155, .075], [.21, .09], [.255, .065], [.27, .13], [.215, .175], [.15, .185], [.105, .155]],
+        pins:    many(26, function() { return { r: rand2(.3, .95), a: rand2(0, 6.28) }; }),
+        peaks:   many(7, function(i) { return { x: i / 6, h: rand2(.25, .5) }; }),
+        canes:   many(5, function() { return { x: rand2(.05, .95), h: rand2(50, 95), lean: rand2(-.12, .12), ph: rand2(0, 6.28) }; }),
+        drops:   many(7, function(i) { return { x: rand2(.02, .98), r: rand2(9, 22), c: ['#ff4fd8', '#58ffb1', '#ffd23f', '#7f6fff'][i % 4] }; }),
+        marsh:   many(3, function() { return { x: rand2(.1, .9), sp: rand2(.25, .5) * (Math.random() < .5 ? 1 : -1), ph: rand2(0, 6.28) }; }),
+        glints:  many(12, function() { return { x: Math.random(), y: rand2(.82, .98), ph: rand2(0, 6.28) }; }),
+        sang: false
+    };
+    function rand2(a, b) { return a + Math.random() * (b - a); } // rand() is defined later
+})();
+
+// ambient cosmetics (snow, bubbles, notes) — render-side only, never gameplay.
+// deliberately small + dim so they can never be mistaken for food.
+var amb = [], iceTrails = [];
+function ambPush(p) { if (amb.length < (isTouch ? 60 : 140)) amb.push(p); }
+function drawAmb() {
+    for (var i = amb.length - 1; i >= 0; i--) {
+        var p = amb[i];
+        p.x += p.vx + (p.sway !== undefined ? Math.sin(frame / 30 + p.sway) * .5 : 0);
+        p.y += p.vy; p.life -= p.decay;
+        if (p.life <= 0 || p.y < -30 || p.y > H + 30) { amb.splice(i, 1); continue; }
+        ctx.globalAlpha = p.alpha * p.life;
+        if (p.note) { // hand-drawn music note (no font glyphs)
+            ctx.strokeStyle = 'rgba(' + p.color + ',1)';
+            ctx.fillStyle = 'rgba(' + p.color + ',1)';
+            ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.ellipse(p.x - 2, p.y + 3, 3, 2.2, -.4, 0, 7); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(p.x + 1, p.y + 2); ctx.lineTo(p.x + 1, p.y - 7); ctx.stroke();
+            if (p.note === 2) { // beamed pair
+                ctx.beginPath(); ctx.ellipse(p.x + 6, p.y + 4, 3, 2.2, -.4, 0, 7); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(p.x + 9, p.y + 3); ctx.lineTo(p.x + 9, p.y - 6); ctx.stroke();
+                ctx.lineWidth = 2.4;
+                ctx.beginPath(); ctx.moveTo(p.x + 1, p.y - 7); ctx.lineTo(p.x + 9, p.y - 6); ctx.stroke();
+            } else { // little flag
+                ctx.beginPath(); ctx.moveTo(p.x + 1, p.y - 7);
+                ctx.quadraticCurveTo(p.x + 5, p.y - 6, p.x + 4, p.y - 2); ctx.stroke();
+            }
+        } else if (p.ring) {
+            ctx.strokeStyle = 'rgba(' + p.color + ',1)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.stroke();
+        } else {
+            ctx.fillStyle = 'rgba(' + p.color + ',1)';
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    }
+}
+
+// deterministic world state — pure functions of `frame`, shared by tick + render
+function flowerGlow(i) { return Math.sin(frame / 120 + SCN.flowers[i].ph); } // > 0.55 = blooming
+function whaleNow() {
+    var cyc = frame % 1440;
+    if (cyc >= 600) return { on: false };
+    var p = cyc / 600;
+    return { on: true, p: p, x: (p * 1.6 - 0.3) * W, y: H * 0.3 + Math.sin(p * 5) * 24 };
+}
+function planetNow() {
+    return { x: W * 0.72 + Math.sin(frame / 60 * 0.11) * W * 0.2, y: H * 0.4 + Math.sin(frame / 60 * 0.23) * H * 0.16 };
+}
+function discGeom() { return { cx: W / 2, cy: H * 0.56, rx: W * 0.47, ry: H * 0.38, rot: frame * 0.006 }; }
+
+// ---------- scenery renderers (all deliberately dimmer than game objects) ----------
+function drawMeadow() {
+    var t = frame / 60;
+    var mx = W * 0.78, my = H * 0.2; // moon
+    ctx.fillStyle = 'rgba(235,240,255,.8)';
+    ctx.shadowColor = '#bcd6ff'; ctx.shadowBlur = 34 * FXQ;
+    ctx.beginPath(); ctx.arc(mx, my, 44, 0, 7); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(160,175,210,.5)';
+    ctx.beginPath(); ctx.arc(mx - 12, my - 8, 7, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(mx + 14, my + 12, 5, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(8,18,34,.95)'; // hills
+    ctx.beginPath(); ctx.moveTo(0, H);
+    SCN.hills.forEach(function(h) { ctx.lineTo(h.x * W, H - h.h * H); });
+    ctx.lineTo(W, H); ctx.fill();
+    ctx.lineCap = 'round'; // grass parts around the cats
+    SCN.grass.forEach(function(g) {
+        var bx = g.x * W, by = g.y * H;
+        var sway = Math.sin(t * 1.6 + g.ph) * 7;
+        [cat1, cat2].forEach(function(c) {
+            var gdx = bx - c.x, gdy = by - c.y;
+            var gd = Math.sqrt(gdx * gdx + gdy * gdy);
+            if (gd < 70) sway += (gdx > 0 ? 1 : -1) * (1 - gd / 70) * 22;
+        });
+        ctx.strokeStyle = 'rgba(70,140,110,.45)'; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(bx, by);
+        ctx.quadraticCurveTo(bx + sway * .4, by - g.h * .6, bx + sway, by - g.h);
+        ctx.stroke();
+    });
+    // lureflowers — blooming one glows loud: it's calling its moths
+    SCN.flowers.forEach(function(fl, i) {
+        var open = Math.min(1, Math.max(0, (flowerGlow(i) - 0.55) / 0.3));
+        var fx = fl.x * W, fy = fl.y * H;
+        var col = i === 0 ? '#ffd23f' : '#7fe8ff';
+        ctx.strokeStyle = 'rgba(70,140,110,.8)'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(fx, fy + 34);
+        ctx.quadraticCurveTo(fx + Math.sin(t + fl.ph) * 4, fy + 16, fx, fy); ctx.stroke();
+        if (open > 0) {
+            var hg = ctx.createRadialGradient(fx, fy, 0, fx, fy, 60);
+            hg.addColorStop(0, i === 0 ? 'rgba(255,210,63,.25)' : 'rgba(127,232,255,.25)');
+            hg.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = hg; ctx.fillRect(fx - 60, fy - 60, 120, 120);
+        }
+        ctx.fillStyle = col;
+        ctx.shadowColor = col; ctx.shadowBlur = (6 + open * 12) * FXQ;
+        for (var pt = 0; pt < 6; pt++) {
+            var pa = pt / 6 * 6.29 + t * 0.3, pr = 4 + open * 9;
+            ctx.beginPath();
+            ctx.ellipse(fx + Math.cos(pa) * pr, fy + Math.sin(pa) * pr, 4 + open * 3, 2.5 + open * 2, pa, 0, 7);
+            ctx.fill();
+        }
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(fx, fy, 3 + open * 2, 0, 7); ctx.fill();
+        ctx.shadowBlur = 0;
+    });
+    if (Math.random() < 0.05) ambPush({ x: rand(0, W), y: rand(H * .3, H * .95), vx: rand(-.4, .4), vy: rand(-.3, .1), r: 1.2, life: 1, decay: .01, color: '190,235,170', alpha: .35, sway: rand(0, 6.28) });
+    drawAmb();
+}
+function drawTrench() {
+    var t = frame / 60;
+    var wh = whaleNow(); // the old whale: her wake sweeps the menu (see tick)
+    if (wh.on) {
+        if (!SCN.sang && state === 'playing') {
+            SCN.sang = true; beep(90, 1.6, 'sine', .07, 140); beep(130, 1.4, 'sine', .045, 100);
+            lifeStats.whales++; saveStats();
+            if (lifeStats.whales >= 5) unlockAch('whale');
+        }
+        var WL = Math.min(W * 0.42, 460);
+        ctx.save(); ctx.translate(wh.x, wh.y);
+        ctx.fillStyle = 'rgba(4,26,38,.92)';
+        ctx.beginPath(); ctx.ellipse(0, 0, WL / 2, WL / 5.5, 0, 0, 7); ctx.fill();
+        var tw = Math.sin(t * 3) * WL / 14;
+        ctx.beginPath(); ctx.moveTo(-WL / 2 + 8, 0);
+        ctx.lineTo(-WL / 2 - WL / 7, -WL / 9 + tw); ctx.lineTo(-WL / 2 - WL / 7, WL / 9 + tw); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(0, WL / 7); ctx.lineTo(-WL / 10, WL / 4); ctx.lineTo(WL / 14, WL / 6.5); ctx.fill();
+        ctx.fillStyle = 'rgba(150,240,255,.85)';
+        ctx.beginPath(); ctx.arc(WL / 2.9, -WL / 22, 3, 0, 7); ctx.fill();
+        for (var b = 0; b < 7; b++) {
+            ctx.fillStyle = 'rgba(0,246,255,' + (0.25 + Math.sin(t * 2 + b) * 0.2).toFixed(2) + ')';
+            ctx.beginPath(); ctx.arc(-WL / 3 + b * WL / 10, WL / 16, 2, 0, 7); ctx.fill();
+        }
+        ctx.restore();
+        if (Math.random() < 0.4) ambPush({ x: wh.x - 200, y: wh.y + rand(-20, 20), vx: rand(-.5, 0), vy: rand(-.8, -.3), r: rand(1.5, 3.5), life: 1, decay: .01, color: '150,230,255', alpha: .4, ring: true });
+    } else SCN.sang = false;
+    for (var i = 0; i < 3; i++) { // god rays
+        var x = (i * 0.33 + 0.15 + Math.sin(t * 0.2 + i * 2) * 0.03) * W;
+        var g = ctx.createLinearGradient(x, 0, x + 60, H);
+        g.addColorStop(0, 'rgba(0,246,255,.06)'); g.addColorStop(1, 'rgba(0,246,255,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.moveTo(x - 20, 0); ctx.lineTo(x + 40, 0); ctx.lineTo(x + 140, H); ctx.lineTo(x - 80, H); ctx.fill();
+    }
+    SCN.kelp.forEach(function(k) {
+        ctx.strokeStyle = 'rgba(88,255,177,.35)'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+        ctx.beginPath();
+        var bx = k.x * W, by = H;
+        ctx.moveTo(bx, by);
+        for (var s = 1; s <= 7; s++) {
+            var p = s / 7;
+            ctx.lineTo(bx + Math.sin(t * 1.2 + k.ph + p * 3) * 14 * p, by - p * k.h * H);
+        }
+        ctx.stroke();
+    });
+    SCN.jellies.forEach(function(J) {
+        var x = J.x * W + Math.sin(t * 0.5 + J.ph) * 30;
+        var y = J.y * H + Math.sin(t * 0.8 + J.ph * 2) * 18;
+        var sq = 1 + Math.sin(t * 2.4 + J.ph) * 0.14;
+        ctx.fillStyle = 'rgba(127,111,255,.3)';
+        ctx.beginPath(); ctx.ellipse(x, y, J.r * sq, J.r * (2 - sq) * .8, 0, Math.PI, 0); ctx.fill();
+        ctx.strokeStyle = 'rgba(127,111,255,.25)'; ctx.lineWidth = 1.5;
+        for (var s2 = -1; s2 <= 1; s2++) {
+            ctx.beginPath(); ctx.moveTo(x + s2 * J.r * .4, y);
+            ctx.quadraticCurveTo(x + s2 * J.r * .4 + Math.sin(t * 3 + s2) * 5, y + J.r, x + s2 * J.r * .5, y + J.r * 1.7);
+            ctx.stroke();
+        }
+    });
+    if (Math.random() < 0.1) ambPush({ x: rand(0, W), y: H + 6, vx: rand(-.15, .15), vy: rand(-1.4, -.6), r: rand(1.5, 4), life: 1, decay: .004, color: '150,230,255', alpha: .4, ring: true });
+    drawAmb();
+}
+function drawNebulaWorld() {
+    var t = frame / 60;
+    for (var i = 0; i < 3; i++) { // nebula clouds
+        var nx = ((i * 0.37 + t * 0.008) % 1.2 - 0.1) * W, ny = (0.2 + i * 0.28) * H;
+        var g = ctx.createRadialGradient(nx, ny, 0, nx, ny, 190);
+        g.addColorStop(0, i % 2 ? 'rgba(255,79,216,.09)' : 'rgba(0,246,255,.07)');
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = g; ctx.fillRect(nx - 190, ny - 190, 380, 380);
+    }
+    var pn = planetNow(); // wandering snack-thief planet
+    var pg = ctx.createRadialGradient(pn.x - 18, pn.y - 18, 2, pn.x, pn.y, 46);
+    pg.addColorStop(0, '#ff4fd8'); pg.addColorStop(1, '#7f6fff');
+    ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(pn.x, pn.y, 46, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(pn.x, pn.y, 78, 21, -.3, 0, 7); ctx.stroke();
+    var g2 = ctx.createRadialGradient(W * .13, H * .68, 2, W * .13, H * .68, 26); // small still planet
+    g2.addColorStop(0, '#58ffb1'); g2.addColorStop(1, '#00889f');
+    ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(W * .13, H * .68, 26, 0, 7); ctx.fill();
+    // THE GREAT COW constellation
+    var ca = 0.3 + Math.sin(t * 0.4) * 0.2;
+    ctx.strokeStyle = 'rgba(190,210,255,' + (ca * .5).toFixed(2) + ')'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    SCN.cow.forEach(function(pt, i2) {
+        i2 === 0 ? ctx.moveTo(pt[0] * W, pt[1] * H) : ctx.lineTo(pt[0] * W, pt[1] * H);
+    });
+    ctx.closePath(); ctx.stroke();
+    SCN.cow.forEach(function(pt, i2) {
+        ctx.fillStyle = 'rgba(255,255,255,' + Math.max(0, ca + Math.sin(t * 2 + i2) * .2).toFixed(2) + ')';
+        ctx.beginPath(); ctx.arc(pt[0] * W, pt[1] * H, i2 % 3 ? 1.5 : 2.5, 0, 7); ctx.fill();
+    });
+    ctx.fillStyle = 'rgba(190,210,255,' + (ca * .8).toFixed(2) + ')';
+    ctx.font = '7px "Press Start 2P", monospace'; ctx.textAlign = 'center';
+    ctx.fillText('THE GREAT COW', .19 * W, .23 * H);
+    if (Math.random() < 0.05) ambPush({ x: rand(0, W), y: rand(0, H), vx: rand(-.3, .3), vy: rand(-.3, .3), r: rand(.8, 1.6), life: 1, decay: .008, color: '255,230,255', alpha: .35 });
+    drawAmb();
+}
+function drawMusicBox() {
+    var t = frame / 60;
+    var G = discGeom();
+    [[0.06, 0.14, 70, 1], [0.94, 0.10, 55, -1]].forEach(function(gr) { // corner gears
+        ctx.save(); ctx.translate(gr[0] * W, gr[1] * H); ctx.rotate(t * 0.3 * gr[3]);
+        ctx.fillStyle = 'rgba(120,90,160,.22)';
+        for (var th = 0; th < 8; th++) {
+            ctx.save(); ctx.rotate(th / 8 * 6.28);
+            ctx.fillRect(-6, -gr[2] - 10, 12, 14); ctx.restore();
+        }
+        ctx.beginPath(); ctx.arc(0, 0, gr[2], 0, 7); ctx.fill();
+        ctx.fillStyle = 'rgba(5,2,15,.9)';
+        ctx.beginPath(); ctx.arc(0, 0, gr[2] * .35, 0, 7); ctx.fill();
+        ctx.restore();
+    });
+    var g = ctx.createRadialGradient(G.cx, G.cy, 0, G.cx, G.cy, G.rx); // the disc
+    g.addColorStop(0, 'rgba(90,60,30,.5)'); g.addColorStop(.85, 'rgba(60,38,20,.5)'); g.addColorStop(1, 'rgba(150,110,50,.55)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.ellipse(G.cx, G.cy, G.rx, G.ry, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,210,63,.3)'; ctx.lineWidth = 2;
+    for (var ring = 1; ring <= 4; ring++) {
+        ctx.beginPath(); ctx.ellipse(G.cx, G.cy, G.rx * ring / 4.4, G.ry * ring / 4.4, 0, 0, 7); ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(255,210,63,.35)'; // engraved pins: tiny + dim, NOT food
+    SCN.pins.forEach(function(p) {
+        var a = p.a + G.rot;
+        ctx.beginPath();
+        ctx.arc(G.cx + Math.cos(a) * p.r * G.rx, G.cy + Math.sin(a) * p.r * G.ry, 2, 0, 7);
+        ctx.fill();
+    });
+    ctx.fillStyle = 'rgba(255,210,63,.7)';
+    ctx.beginPath(); ctx.ellipse(G.cx, G.cy, 9, 6, 0, 0, 7); ctx.fill();
+    ctx.lineCap = 'round'; // the comb
+    for (var tn = 0; tn < 5; tn++) {
+        var ty = G.cy - 26 + tn * 13;
+        var tipX = G.cx - G.rx * Math.sqrt(Math.max(0, 1 - Math.pow((ty - G.cy) / G.ry, 2))) + tn * 4;
+        ctx.strokeStyle = 'rgba(223,231,242,.5)'; ctx.lineWidth = 4 - tn * .4;
+        ctx.beginPath(); ctx.moveTo(-4, ty); ctx.lineTo(tipX, ty); ctx.stroke();
+        ctx.fillStyle = 'rgba(223,231,242,.9)';
+        ctx.beginPath(); ctx.arc(tipX, ty, 3, 0, 7); ctx.fill();
+    }
+    if (Math.random() < 0.03) ambPush({ x: G.cx - G.rx + rand(-10, 40), y: G.cy + rand(-30, 30), vx: rand(-.3, .1), vy: rand(-1, -.5), r: 0, life: 1, decay: .006, color: '224,179,255', alpha: .7, note: Math.random() < .5 ? 1 : 2 });
+    drawAmb();
+}
+function drawGlacier() {
+    var t = frame / 60;
+    for (var band = 0; band < 3; band++) { // aurora + curtains
+        var pts = [];
+        for (var x = 0; x <= W; x += 24) {
+            pts.push([x, H * (0.14 + band * 0.06) + Math.sin(x * 0.008 + t * (0.8 + band * 0.3) + band * 2) * 34]);
+        }
+        ctx.beginPath();
+        pts.forEach(function(p, i) { i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]); });
+        ctx.strokeStyle = ['rgba(88,255,177,.18)', 'rgba(0,246,255,.13)', 'rgba(255,79,216,.1)'][band];
+        ctx.lineWidth = 26 - band * 6; ctx.lineCap = 'round'; ctx.stroke();
+        if (band === 0 && !isTouch) {
+            for (var ci = 2; ci < pts.length - 2; ci += 3) {
+                var shimmer = 0.5 + Math.sin(t * 2.4 + ci) * 0.5;
+                var cg = ctx.createLinearGradient(0, pts[ci][1], 0, pts[ci][1] + 90);
+                cg.addColorStop(0, 'rgba(88,255,177,' + (0.13 * shimmer).toFixed(3) + ')');
+                cg.addColorStop(1, 'rgba(88,255,177,0)');
+                ctx.fillStyle = cg;
+                ctx.fillRect(pts[ci][0] - 5, pts[ci][1], 10, 90);
+            }
+        }
+    }
+    ctx.fillStyle = 'rgba(190,225,255,.14)'; // peaks
+    ctx.beginPath(); ctx.moveTo(0, H);
+    SCN.peaks.forEach(function(p) { ctx.lineTo(p.x * W, H - p.h * H); });
+    ctx.lineTo(W, H); ctx.fill();
+    SCN.peaks.forEach(function(p, i) {
+        if (i === 0 || i === SCN.peaks.length - 1) return;
+        var px = p.x * W, py = H - p.h * H;
+        ctx.strokeStyle = 'rgba(255,79,216,.25)'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(px - 16, py + 30); ctx.lineTo(px + 8, py + 10); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,.4)';
+        ctx.beginPath(); ctx.moveTo(px - 12, py + 10); ctx.lineTo(px, py - 2); ctx.lineTo(px + 12, py + 10);
+        ctx.quadraticCurveTo(px, py + 16, px - 12, py + 10); ctx.fill();
+    });
+    var lx = W * 0.28, ly = H * 0.9, lr = W * 0.16; // fizzing soda lake
+    var lg = ctx.createRadialGradient(lx, ly, 0, lx, ly, lr);
+    lg.addColorStop(0, 'rgba(127,232,255,.18)'); lg.addColorStop(1, 'rgba(127,232,255,.04)');
+    ctx.fillStyle = lg;
+    ctx.beginPath(); ctx.ellipse(lx, ly, lr, lr * .3, 0, 0, 7); ctx.fill();
+    SCN.canes.forEach(function(c) { // candy-cane trees
+        ctx.save(); ctx.translate(c.x * W, H * 0.97); ctx.rotate(c.lean + Math.sin(t * .9 + c.ph) * .03);
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 9;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -c.h); ctx.arc(-10, -c.h, 10, 0, -Math.PI, true); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,51,85,.85)';
+        ctx.setLineDash([8, 8]); ctx.lineDashOffset = c.ph * 10;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -c.h); ctx.arc(-10, -c.h, 10, 0, -Math.PI, true); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+    });
+    SCN.drops.forEach(function(d) { // gumdrop mounds
+        var gx = d.x * W, gy = H * 0.985;
+        ctx.globalAlpha = .7; ctx.fillStyle = d.c;
+        ctx.beginPath(); ctx.arc(gx, gy, d.r, Math.PI, 0); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,.45)';
+        ctx.beginPath(); ctx.ellipse(gx - d.r * .35, gy - d.r * .55, d.r * .18, d.r * .3, -.6, 0, 7); ctx.fill();
+        ctx.globalAlpha = 1;
+    });
+    SCN.marsh.forEach(function(m) { // marshmallow hoppers
+        m.x += m.sp / W * 1.2;
+        if (m.x > 1.05) m.x = -0.05; if (m.x < -0.05) m.x = 1.05;
+        var hop = Math.abs(Math.sin(t * 3.2 + m.ph));
+        var hx = m.x * W, hy = H * 0.93 - hop * 26;
+        var sq = 1 - (1 - hop) * 0.25;
+        ctx.fillStyle = 'rgba(255,255,255,.9)';
+        ctx.beginPath(); ctx.ellipse(hx, hy, 9 / sq, 9 * sq, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = '#221b2e';
+        ctx.beginPath(); ctx.arc(hx - 3, hy - 2, 1.2, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.arc(hx + 3, hy - 2, 1.2, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.arc(hx, hy + 2, 1.4, 0, Math.PI); ctx.fill();
+        ctx.fillStyle = 'rgba(255,180,220,.6)';
+        ctx.beginPath(); ctx.arc(hx - 5.5, hy + 1, 1.3, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.arc(hx + 5.5, hy + 1, 1.3, 0, 7); ctx.fill();
+    });
+    SCN.glints.forEach(function(s) { // ice glints
+        var a = Math.max(0, Math.sin(t * 1.6 + s.ph));
+        if (a < .1) return;
+        var sx = s.x * W, sy = s.y * H, sr = 3 + a * 3;
+        ctx.strokeStyle = 'rgba(255,255,255,' + (a * .55).toFixed(2) + ')'; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(sx - sr, sy); ctx.lineTo(sx + sr, sy);
+        ctx.moveTo(sx, sy - sr); ctx.lineTo(sx, sy + sr); ctx.stroke();
+    });
+    if (Math.random() < 0.25) ambPush({ x: rand(0, W), y: -6, vx: rand(-.4, .4), vy: rand(.5, 1.4), r: rand(1, 2.5), life: 1, decay: .004, color: '235,250,255', alpha: .6, sway: rand(0, 6.28) });
+    if (Math.random() < 0.08) ambPush({ x: lx + rand(-lr * .8, lr * .8), y: ly, vx: rand(-.1, .1), vy: rand(-1.2, -.6), r: rand(1, 2.5), life: 1, decay: .012, color: '180,240,255', alpha: .5, ring: true });
+    drawAmb();
+}
+WORLDS[1].draw = drawMeadow;
+WORLDS[2].draw = drawTrench;
+WORLDS[3].draw = drawNebulaWorld;
+WORLDS[4].draw = drawMusicBox;
+WORLDS[5].draw = drawGlacier;
+
+// ---------- per-world food behavior ----------
+function worldPlaceFood(d) {
+    delete d.flee; delete d.orbit; delete d.disc; delete d.slide;
+    if (worldIdx === 1) { d.flee = true; d.vx = 0; d.vy = 0; }
+    else if (worldIdx === 3) {
+        d.orbit = { cx: d.x, cy: d.y, r: srand(14, 40), a: srand(0, 6.28), sp: srand(.6, 1.4) * (grand() < .5 ? 1 : -1) };
+    } else if (worldIdx === 4) {
+        var G = discGeom();
+        d.disc = { fr: srand(.3, .92), a: srand(0, 6.28) };
+        d.x = G.cx + Math.cos(d.disc.a) * G.rx * d.disc.fr;
+        d.y = Math.max(75, G.cy + Math.sin(d.disc.a) * G.ry * d.disc.fr);
+    } else if (worldIdx === 5) { d.slide = true; d.vx = srand(-1.6, 1.6); d.vy = srand(-.5, .5); }
+}
+function worldFoodTick(d) {
+    if (d.flee) { // meadow moths: run from the nearer cat, swarm a blooming flower
+        var near = null, nd = 1e9;
+        [cat1, cat2].forEach(function(c) {
+            var ddx = d.x - c.x, ddy = d.y - c.y, dd = Math.sqrt(ddx * ddx + ddy * ddy);
+            if (dd < nd) { nd = dd; near = c; }
+        });
+        if (nd < 170 && nd > 0) {
+            d.vx += (d.x - near.x) / nd * 0.5;
+            d.vy += (d.y - near.y) / nd * 0.5;
+        }
+        SCN.flowers.forEach(function(fl, i) {
+            if ((i === 0 ? GOLD : SILVER) !== d.color) return;
+            if (flowerGlow(i) < 0.55) return;
+            var axp = fl.x * W - d.x, ayp = fl.y * H - d.y;
+            var ad = Math.sqrt(axp * axp + ayp * ayp) || 1;
+            if (ad < 320 && ad > 30) { d.vx += axp / ad * 0.34; d.vy += ayp / ad * 0.34; }
+        });
+        d.vx += Math.sin(frame / 20 + d.phase) * 0.06;
+        d.vy += Math.cos(frame / 26 + d.phase) * 0.06;
+        var fs = Math.sqrt(d.vx * d.vx + d.vy * d.vy);
+        if (fs > 3.2) { d.vx *= 3.2 / fs; d.vy *= 3.2 / fs; }
+    } else if (worldIdx === 2) { // whale wake sweeps the menu
+        var wh = whaleNow();
+        if (wh.on) { d.vx += 0.05; if (d.vx > 2.4) d.vx = 2.4; }
+    } else if (d.orbit) { // nebula: weightless orbit + planet capture
+        d.orbit.a += d.orbit.sp * 0.02 * timeScale;
+        var pn = planetNow();
+        var gdx = pn.x - d.orbit.cx, gdy = pn.y - d.orbit.cy;
+        var gdd = Math.sqrt(gdx * gdx + gdy * gdy);
+        if (gdd < 170) {
+            d.orbit.cx += gdx * 0.03; d.orbit.cy += gdy * 0.03;
+            if (!d.captured && gdd < 80) {
+                d.captured = true;
+                d.orbit.r = Math.max(d.orbit.r, 66);
+                ripple(d.x, d.y, '#ff4fd8');
+            }
+        }
+        d.x = d.orbit.cx + Math.cos(d.orbit.a) * d.orbit.r;
+        d.y = d.orbit.cy + Math.sin(d.orbit.a) * d.orbit.r;
+    } else if (d.disc) { // music box: ride the disc, pluck the comb each lap
+        var G = discGeom();
+        d.disc.a += 0.006 * timeScale;
+        d.x = G.cx + Math.cos(d.disc.a) * G.rx * d.disc.fr;
+        d.y = G.cy + Math.sin(d.disc.a) * G.ry * d.disc.fr;
+        var wrapped = ((d.disc.a % 6.283) + 6.283) % 6.283;
+        if (d.lastWrap !== undefined && d.lastWrap < 3.14 && wrapped >= 3.14) {
+            beep(392 + (1 - d.disc.fr) * 520, .3, 'triangle', .04);
+            ripple(d.x, d.y, foodTint(d.color));
+        }
+        d.lastWrap = wrapped;
+    }
+}
+
+// ---------- themed food sprites (drawn inside the standard halo + glow) ----------
+function drawWorldFood(d, fc) {
+    var s = d.r / 9, t = frame / 60;
+    ctx.save(); ctx.scale(s, s);
+    ctx.fillStyle = fc;
+    if (worldIdx === 1) { // glowmoth
+        var flap = Math.sin(frame * 0.27 + d.phase) * 0.4;
+        ctx.save(); ctx.rotate(flap);
+        ctx.beginPath(); ctx.ellipse(-6, -3, 7, 4, -.5, 0, 7); ctx.fill(); ctx.restore();
+        ctx.save(); ctx.rotate(-flap);
+        ctx.beginPath(); ctx.ellipse(6, -3, 7, 4, .5, 0, 7); ctx.fill(); ctx.restore();
+        ctx.fillStyle = 'rgba(255,255,255,.85)';
+        ctx.beginPath(); ctx.ellipse(0, 0, 3, 6, 0, 0, 7); ctx.fill();
+    } else if (worldIdx === 2) {
+        if (d.color === GOLD) { // ember sardine
+            ctx.beginPath(); ctx.ellipse(0, 0, 10, 5, 0, 0, 7); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(15, -5); ctx.lineTo(15, 5); ctx.fill();
+            ctx.fillStyle = '#04010d';
+            ctx.beginPath(); ctx.arc(-4, -1, 1.5, 0, 7); ctx.fill();
+        } else { // ghost shrimp
+            ctx.strokeStyle = fc; ctx.lineWidth = 5; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.arc(0, -1, 7, 0.3, 2.6); ctx.stroke();
+            ctx.fillStyle = '#04010d';
+            ctx.beginPath(); ctx.arc(-6, 1, 1.5, 0, 7); ctx.fill();
+        }
+    } else if (worldIdx === 3) {
+        if (d.color === GOLD) { // star cream
+            ctx.beginPath();
+            for (var i = 0; i < 10; i++) {
+                var a = i / 10 * 6.29 + t, r = i % 2 ? 5 : 10;
+                ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+            }
+            ctx.fill();
+        } else { // milk orb
+            var wob = 1 + Math.sin(frame * 0.08 + d.phase) * .15;
+            ctx.beginPath(); ctx.ellipse(0, 0, 9 * wob, 9 / wob, 0, 0, 7); ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,.75)';
+            ctx.beginPath(); ctx.arc(-3, -3, 2.5, 0, 7); ctx.fill();
+        }
+    } else if (worldIdx === 4) {
+        if (d.color === GOLD) { // honey note
+            ctx.beginPath(); ctx.ellipse(-3, 5, 6, 4.5, -.4, 0, 7); ctx.fill();
+            ctx.strokeStyle = fc; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(2, 4); ctx.lineTo(2, -9); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(2, -9); ctx.quadraticCurveTo(9, -7, 8, -1); ctx.stroke();
+        } else { // chime berry
+            ctx.rotate(Math.sin(frame * 0.1 + d.phase) * .18);
+            ctx.beginPath(); ctx.moveTo(-7, 5);
+            ctx.quadraticCurveTo(-7, -7, 0, -8); ctx.quadraticCurveTo(7, -7, 7, 5); ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,.8)';
+            ctx.fillRect(-8, 4, 16, 2.5);
+            ctx.beginPath(); ctx.arc(0, 8, 2.2, 0, 7); ctx.fill();
+        }
+    } else if (worldIdx === 5) {
+        if (d.color === GOLD) { // honey popsicle with a happy face
+            ctx.rotate(Math.sin(t + d.phase) * .2);
+            ctx.beginPath(); ctx.moveTo(-6, -12);
+            ctx.lineTo(6, -12); ctx.lineTo(6, 5); ctx.lineTo(-6, 5); ctx.fill();
+            ctx.fillStyle = '#e8b96f'; ctx.fillRect(-1.5, 5, 3, 7);
+            ctx.fillStyle = 'rgba(60,40,0,.8)';
+            ctx.beginPath(); ctx.arc(-3, -6, 1.2, 0, 7); ctx.fill();
+            ctx.beginPath(); ctx.arc(2, -6, 1.2, 0, 7); ctx.fill();
+            ctx.beginPath(); ctx.arc(-.5, -3, 1.8, 0, Math.PI); ctx.fill();
+        } else { // ice mochi with chilly cheeks
+            ctx.beginPath(); ctx.ellipse(0, 1, 10, 8, 0, 0, 7); ctx.fill();
+            ctx.fillStyle = 'rgba(4,10,20,.85)';
+            ctx.beginPath(); ctx.arc(-3.5, 0, 1.2, 0, 7); ctx.fill();
+            ctx.beginPath(); ctx.arc(3.5, 0, 1.2, 0, 7); ctx.fill();
+            ctx.beginPath(); ctx.arc(0, 3, 1.8, 0, Math.PI); ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,.7)';
+            ctx.beginPath(); ctx.arc(-3, -4, 2, 0, 7); ctx.fill();
+        }
+    }
+    ctx.restore();
+}
+
+// ---------- travel + menu ----------
+function updateLevelHUD() {
+    levelEl.textContent = 'LEVEL ' + level + ' - ' + WORLDS[worldIdx].short;
+}
+function unlockWorld(w) {
+    if (worldMask & (1 << w)) return false;
+    worldMask |= (1 << w);
+    try { localStorage.setItem('mirrorcat_worlds', String(worldMask)); } catch (e) {}
+    if (worldMask === 63) unlockAch('tourist');
+    return true;
+}
+function travelToWorld(w) {
+    worldIdx = w;
+    runWorlds.push(w);
+    amb = []; iceTrails = [];
+    var isNew = unlockWorld(w);
+    grace = Math.max(grace, 75); // safe landing while the rules change
+    flash = 0.4; flashColor = '120,200,255';
+    // re-home existing food into the new world's physics
+    for (var i = 0; i < dots.length; i++) {
+        if (dots[i].type === 'food') { dots[i].vx = 0; dots[i].vy = 0; worldPlaceFood(dots[i]); }
+    }
+    updateLevelHUD();
+    var wd = WORLDS[w];
+    setTimeout(function() {
+        if (state !== 'playing') return;
+        banner((isNew ? 'DISCOVERED: ' : '') + wd.name, wd.color);
+        [523, 659, 880, 1319].forEach(function(f2, i2) {
+            setTimeout(function() { beep(f2, 0.14, 'triangle', 0.06); }, i2 * 90);
+        });
+    }, 1100); // let the LEVEL banner finish first
+}
+function buildWorldRow() {
+    var row = document.getElementById('worldRow');
+    row.innerHTML = '';
+    WORLDS.forEach(function(w, i) {
+        var el = document.createElement('div');
+        var locked = !(worldMask & (1 << i));
+        el.className = 'wchip' + (i === startWorld ? ' sel' : '') + (locked ? ' locked' : '');
+        el.innerHTML = locked ? SVG_LOCK + '???' : w.name;
+        if (!locked) {
+            el.style.borderColor = i === startWorld ? '' : '';
+            el.onclick = function() {
+                startWorld = i;
+                try { localStorage.setItem('mirrorcat_worldstart', String(i)); } catch (e) {}
+                worldIdx = i; amb = []; // live menu preview behind the panel
+                buildWorldRow();
+            };
+        }
+        row.appendChild(el);
+    });
+}
+
+// ============================== DAILY MIRROR / STREAK / FEATS ==============================
+// Daily: one seeded ranked run per day — same spawn sequence for everyone.
+// Practice (classic/sprint) stays unlimited and unseeded.
+function mulberry32(a) {
+    return function() {
+        a |= 0; a = a + 0x6D2B79F5 | 0;
+        var t = Math.imul(a ^ a >>> 15, 1 | a);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+}
+var seededRand = null;
+function grand() { return seededRand ? seededRand() : Math.random(); } // gameplay RNG (spawns)
+function srand(a, b) { return a + grand() * (b - a); }                 // seeded range
+
+function todayStr(off) {
+    var d = new Date(Date.now() - (off || 0) * 86400000);
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+function dayNum() { // DAILY #1 = 2026-07-11
+    var n = new Date();
+    return Math.round((new Date(n.getFullYear(), n.getMonth(), n.getDate()) - new Date(2026, 6, 10)) / 86400000);
+}
+var dailyRec = null, streakRec = { streak: 0, last: '', ins: '' };
+try { dailyRec = JSON.parse(localStorage.getItem('mirrorcat_daily') || 'null'); } catch (e) {}
+try { streakRec = JSON.parse(localStorage.getItem('mirrorcat_streak')) || streakRec; } catch (e) {}
+function dailyDone() { return !!(dailyRec && dailyRec.date === todayStr()); }
+function saveDaily() { try { localStorage.setItem('mirrorcat_daily', JSON.stringify(dailyRec)); } catch (e) {} }
+function saveStreak() { try { localStorage.setItem('mirrorcat_streak', JSON.stringify(streakRec)); } catch (e) {} }
+function bumpStreak() { // called once when today's ranked run completes
+    var today = todayStr(), yest = todayStr(1), month = today.slice(0, 7);
+    if (streakRec.last === today) return;
+    if (streakRec.last === yest) streakRec.streak++;
+    else if (streakRec.last === todayStr(2) && streakRec.ins !== month) {
+        streakRec.streak++; streakRec.ins = month; // streak insurance: one missed day a month
+        toastAch('STREAK INSURED', 'A MISSED DAY WAS FORGIVEN');
+    }
+    else streakRec.streak = 1;
+    streakRec.last = today;
+    saveStreak();
+    if (streakRec.streak >= 7) unlockAch('week');
+    if (streakRec.streak >= 30) unlockAch('month');
+}
+function liveStreak() { // what the streak counts as right now (0 if lapsed)
+    if (streakRec.last === todayStr() || streakRec.last === todayStr(1)) return streakRec.streak;
+    return 0;
+}
+
+function shareText() {
+    if (!dailyRec) return '';
+    return 'MIRROR MEW DAILY #' + dailyRec.n + '\n' +
+        'SCORE ' + dailyRec.score + ' | LVL ' + dailyRec.level + ' | x' + dailyRec.combo + ' COMBO\n' +
+        dailyRec.worlds.map(function(w) { return WORLDS[w].short; }).join(' > ') +
+        (liveStreak() > 1 ? '\nSTREAK: ' + liveStreak() + ' DAYS' : '');
+}
+function shareDaily() {
+    var txt = shareText();
+    if (!txt) return;
+    function done() { toastAch('COPIED!', 'PASTE IT TO A FRIEND'); }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, done);
+    else {
+        var ta = document.createElement('textarea');
+        ta.value = txt; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(ta); done();
+    }
+}
+function refreshDailyUI() {
+    var btn = document.getElementById('dailyBtn');
+    if (dailyDone()) { btn.innerHTML = SVG_SPARK + 'DAILY ' + dailyRec.score + ' &middot; SHARE'; }
+    else btn.textContent = 'DAILY MIRROR #' + dayNum();
+    var s = liveStreak();
+    document.getElementById('streakLine').innerHTML =
+        (s > 0 ? SVG_FLAME + 'STREAK: ' + s + ' DAY' + (s > 1 ? 'S' : '') : 'PLAY THE DAILY TO START A STREAK') +
+        (dailyDone() ? '' : ' &middot; ONE RANKED RUN A DAY');
+}
+function dailyAction() {
+    if (dailyDone()) shareDaily();
+    else startGame('daily');
+}
+
+// ---------- shared inline SVG icons (no emoji: crisp at any size, no tofu) ----------
+var SVG_TROPHY = '<svg viewBox="0 0 20 20"><path d="M6 2h8v1h4v3c0 2.3-1.7 4.2-3.9 4.5A4.5 4.5 0 0 1 11 13.7V16h2.5v2h-7v-2H9v-2.3a4.5 4.5 0 0 1-3.1-3.2C3.7 10.2 2 8.3 2 6V3h4zM4 5v1c0 1.2.7 2.2 1.7 2.7L5.6 5zm12 0h-1.6l-.1 3.7c1-.5 1.7-1.5 1.7-2.7z" fill="#ffd23f"/></svg>';
+var SVG_LOCK = '<svg viewBox="0 0 20 20"><rect x="4" y="9" width="12" height="8" rx="2" fill="#7f8fc0"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9" stroke="#7f8fc0" stroke-width="2.2" fill="none"/><circle cx="10" cy="13" r="1.6" fill="#0a0520"/></svg>';
+var SVG_FLAME = '<svg viewBox="0 0 20 20"><path d="M10 1c1 4 5 5.2 5 10a5 5 0 0 1-10 0c0-3 2-4 2-7 1.5 1 2.4 2 3 3 .6-2 .3-4 0-6z" fill="#ff8a00"/><path d="M10 8.5c1.4 1.8 2.8 2.4 2.8 4.3a2.8 2.8 0 0 1-5.6 0c0-1.9 1.7-2.5 2.8-4.3z" fill="#ffd23f"/></svg>';
+var SVG_SPARK = '<svg viewBox="0 0 20 20"><path d="M10 1l1.8 6.2L18 9l-6.2 1.8L10 17l-1.8-6.2L2 9l6.2-1.8z" fill="#ffd23f"/></svg>';
+
+// ---------- feats (achievements) ----------
+var ACH = [
+    { id: 'bite',    name: 'FIRST BITE',      desc: 'EAT YOUR FIRST SNACK' },
+    { id: 'c100',    name: 'CLEAN HUNDRED',   desc: 'SCORE 100 IN ONE RUN' },
+    { id: 'c300',    name: 'TRIPLE CENTURY',  desc: 'SCORE 300 IN ONE RUN' },
+    { id: 'x10',     name: 'COMBO KITTEN',    desc: 'REACH A x10 COMBO' },
+    { id: 'x20',     name: 'COMBO LEGEND',    desc: 'REACH A x20 COMBO' },
+    { id: 'sync5',   name: 'SYNC MASTER',     desc: '5 MIRROR SYNCS IN ONE RUN' },
+    { id: 'graze5',  name: 'DAREDEVIL',       desc: 'GRAZE 5 BOMBS IN ONE RUN' },
+    { id: 'nolife',  name: 'UNTOUCHABLE',     desc: 'REACH LEVEL 5 WITHOUT LOSING A LIFE' },
+    { id: 'tourist', name: 'WORLD TOURIST',   desc: 'VISIT ALL 6 WORLDS' },
+    { id: 'moths',   name: 'MOTH FEAST',      desc: 'EAT 100 GLOWMOTHS (LIFETIME)' },
+    { id: 'whale',   name: 'WHALE WATCHER',   desc: 'SEE THE OLD WHALE PASS 5 TIMES' },
+    { id: 'moon',    name: 'MOON THIEF',      desc: 'EAT A SNACK CAPTURED BY THE PLANET' },
+    { id: 'dj',      name: 'RESIDENT DJ',     desc: 'EAT 50 MUSIC BOX SNACKS (LIFETIME)' },
+    { id: 'ice8',    name: 'ICE DANCER',      desc: 'HIT A x8 COMBO ON THE GLACIER' },
+    { id: 'tamer',   name: 'MOTH TAMER',      desc: 'EAT A MOTH WHILE MAGNET IS ACTIVE' },
+    { id: 'feast',   name: 'FRENZY FEAST',    desc: 'EAT 15 SNACKS IN ONE FRENZY' },
+    { id: 'sprint',  name: 'SPRINT STAR',     desc: 'SCORE 150+ IN SPRINT' },
+    { id: 'dodge',   name: 'BOMB SHEPHERD',   desc: 'OUTLIVE 10 BOMBS IN ONE RUN' },
+    { id: 'week',    name: 'STREAK WEEK',     desc: '7-DAY DAILY STREAK' },
+    { id: 'month',   name: 'MONTH OF MIRRORS',desc: '30-DAY DAILY STREAK' }
+];
+var achSet = {};
+try { (JSON.parse(localStorage.getItem('mirrorcat_ach')) || []).forEach(function(id) { achSet[id] = 1; }); } catch (e) {}
+var lifeStats = { moths: 0, mbox: 0, whales: 0 };
+try { lifeStats = JSON.parse(localStorage.getItem('mirrorcat_stats')) || lifeStats; } catch (e) {}
+function saveStats() { try { localStorage.setItem('mirrorcat_stats', JSON.stringify(lifeStats)); } catch (e) {} }
+
+var toastQ = [], toastBusy = false;
+function toastAch(title, sub, icon) {
+    toastQ.push([title, sub, icon || SVG_SPARK]);
+    if (!toastBusy) nextToast();
+}
+function nextToast() {
+    var el = document.getElementById('achToast');
+    if (!toastQ.length) { toastBusy = false; return; }
+    toastBusy = true;
+    var t = toastQ.shift();
+    el.querySelector('.at-title').textContent = t[1] || 'FEAT UNLOCKED';
+    document.getElementById('achToastName').innerHTML = t[2] + t[0];
+    el.className = 'show';
+    beep(988, 0.1, 'triangle', 0.06, 1319);
+    setTimeout(function() { beep(1319, 0.14, 'triangle', 0.06, 1760); }, 110);
+    setTimeout(function() {
+        el.className = '';
+        setTimeout(nextToast, 400);
+    }, 2600);
+}
+function unlockAch(id) {
+    if (achSet[id]) return;
+    achSet[id] = 1;
+    try { localStorage.setItem('mirrorcat_ach', JSON.stringify(Object.keys(achSet))); } catch (e) {}
+    var a = ACH.filter(function(x) { return x.id === id; })[0];
+    if (a) toastAch(a.name, 'FEAT UNLOCKED', SVG_TROPHY);
+}
+function toggleAch(on) {
+    var ov = document.getElementById('achOverlay');
+    if (on) {
+        document.getElementById('achTitle').innerHTML = SVG_TROPHY + 'FEATS';
+        var n = Object.keys(achSet).length;
+        document.getElementById('achCount').innerHTML =
+            '<span class="gold">' + n + '</span> / ' + ACH.length + ' UNLOCKED';
+        document.getElementById('achGrid').innerHTML = ACH.map(function(a) {
+            var got = achSet[a.id];
+            return '<div class="achitem' + (got ? '' : ' locked') + '"><b>' +
+                (got ? SVG_TROPHY : SVG_LOCK) + a.name + '</b>' + a.desc + '</div>';
+        }).join('');
+    }
+    ov.className = on ? 'overlay show' : 'overlay';
+}
+
+// per-run feat counters (reset in startGame)
+var syncRun = 0, frenzyEats = 0, lostLife = false, runWorlds = [];
 
 var dots = [], particles = [], floaters = [], stars = [], ripples = [], shooters = [];
 var shake = 0, flash = 0, flashColor = '255,79,216';
@@ -694,6 +1497,7 @@ window.addEventListener('keydown', function(e) {
     var overShown = gameOverOverlay.className.indexOf('show') >= 0;
     if (k === 'm') toggleMute();
     if (k === 'escape') {
+        if (document.getElementById('achOverlay').className.indexOf('show') >= 0) { toggleAch(false); return; }
         if (infoOpen) toggleInfo(false);            // back out of info first
         else if (state === 'playing') togglePause(); // esc pauses / resumes
         else if (state === 'dead' && overShown) quitToMenu();
@@ -798,6 +1602,7 @@ function firePulse() {
             var dist = Math.sqrt(dx * dx + dy * dy) || 1;
             if (dist < 200) {
                 var force = (1 - dist / 200) * 9;
+                delete d.orbit; delete d.disc; // knocked free of rails
                 d.vx += (dx / dist) * force;
                 d.vy += (dy / dist) * force;
             }
@@ -811,19 +1616,20 @@ function spawnDot() {
     var m = 60;
     // bias food toward a mid-radius ring around center (60%) so the middle of
     // the playfield stays alive; the rest spawn uniformly for coverage
+    // (grand/srand: seeded in daily mode so everyone gets the same run)
     var dx0, dy0;
-    if (Math.random() < 0.6) {
-        var ang = rand(0, Math.PI * 2);
-        dx0 = W / 2 + Math.cos(ang) * rand(0.1, 0.35) * W;
-        dy0 = H / 2 + Math.sin(ang) * rand(0.1, 0.35) * H;
+    if (grand() < 0.6) {
+        var ang = srand(0, Math.PI * 2);
+        dx0 = W / 2 + Math.cos(ang) * srand(0.1, 0.35) * W;
+        dy0 = H / 2 + Math.sin(ang) * srand(0.1, 0.35) * H;
         dx0 = Math.max(m, Math.min(W - m, dx0));
         dy0 = Math.max(m + 60, Math.min(H - m, dy0));
     } else {
-        dx0 = rand(m, W - m); dy0 = rand(m + 60, H - m);
+        dx0 = srand(m, W - m); dy0 = srand(m + 60, H - m);
     }
     var d = {
         x: dx0, y: dy0,
-        color: Math.random() < 0.5 ? GOLD : SILVER,
+        color: grand() < 0.5 ? GOLD : SILVER,
         r: 0, targetR: 9, born: frame,
         life: Math.max(300, 640 - level * 30),
         vx: 0, vy: 0, type: 'food',
@@ -831,14 +1637,15 @@ function spawnDot() {
     };
     if (level >= 3) { // dots drift on higher levels (gentler on small screens)
         var sp = Math.min(0.4 + level * 0.12, 1.8) * (Math.min(W, H) < 600 ? 0.75 : 1);
-        var a = Math.random() * Math.PI * 2;
+        var a = srand(0, Math.PI * 2);
         d.vx = Math.cos(a) * sp; d.vy = Math.sin(a) * sp;
     }
+    worldPlaceFood(d); // world physics may override position/velocity
     dots.push(d);
     ripple(d.x, d.y, foodTint(d.color)); // spawn-in telegraph: field feels alive
 }
 function spawnPowerup() {
-    var roll = Math.random();
+    var roll = grand();
     var type = roll < 0.24 ? 'star'
              : roll < 0.40 ? 'clock'
              : roll < 0.54 ? 'shield'
@@ -847,7 +1654,7 @@ function spawnPowerup() {
              : roll < 0.90 ? 'frenzy' : 'heart';
     if (type === 'heart' && lives >= 3) type = 'star';
     var m = 70;
-    var px = rand(m, W - m), py = rand(m + 60, H - m);
+    var px = srand(m, W - m), py = srand(m + 60, H - m);
     dots.push({
         x: px, y: py,
         r: 0, targetR: 12, born: frame, life: 420,
@@ -866,17 +1673,17 @@ function spawnBomb() {
     // never spawn right on top of a cat
     var x, y, tries = 0;
     do {
-        x = rand(m, W - m); y = rand(m + 60, H - m); tries++;
+        x = srand(m, W - m); y = srand(m + 60, H - m); tries++;
     } while (tries < 12 && ((Math.abs(x - cat1.x) < 160 && Math.abs(y - cat1.y) < 160) ||
                             (Math.abs(x - cat2.x) < 160 && Math.abs(y - cat2.y) < 160)));
     var sp = Math.min(0.5 + level * 0.15, 2.2) * (Math.min(W, H) < 600 ? 0.75 : 1);
-    var a = Math.random() * Math.PI * 2;
+    var a = srand(0, Math.PI * 2);
     dots.push({
         x: x, y: y, r: 0, targetR: 13, born: frame, life: 540,
         vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
         type: 'bomb', phase: Math.random() * Math.PI * 2,
         // seekers slowly hunt the nearest cat from level 5 up — pulse them away!
-        homing: level >= 5 && Math.random() < 0.35
+        homing: level >= 5 && grand() < 0.35
     });
     // fair warning: red ring + low blip where the bomb materializes
     ripple(x, y, '#ff3355');
@@ -884,9 +1691,17 @@ function spawnBomb() {
 }
 
 // ============================== GAME FLOW ==============================
+var runStartWorld = 0;
 function startGame(mode) {
     gameMode = mode || gameMode; // PLAY AGAIN repeats the last mode
+    if (gameMode === 'daily' && dailyDone()) {
+        gameMode = 'classic'; // ranked run is spent — this one's practice
+        toastAch('PRACTICE RUN', "TODAY'S DAILY IS ALREADY DONE");
+    }
+    // daily: seeded spawn RNG — everyone on Earth gets the same run today
+    seededRand = gameMode === 'daily' ? mulberry32((dayNum() * 2654435761) % 2147483647) : null;
     sprintTime = SPRINT_FRAMES;
+    syncRun = 0; frenzyEats = 0; lostLife = false;
     hiscoreEl.textContent = gameMode === 'sprint' ? hiscoreSprint : hiscore;
     score = 0; lives = 3; level = 1; frame = 0;
     combo = 0; comboTimer = 0; bestCombo = 0; eaten = 0;
@@ -897,6 +1712,10 @@ function startGame(mode) {
     freezeFrames = 0; beamTimer = 0; grazes = 0;
     lastEatFrame.gold = -999; lastEatFrame.silver = -999;
     lastTime = 0; accum = 0;
+    // daily always starts at the day's world, ignoring menu choice — fairness
+    runStartWorld = gameMode === 'daily' ? dayNum() % WORLDS.length : startWorld;
+    worldIdx = runStartWorld; amb = []; iceTrails = []; unlockWorld(worldIdx);
+    runWorlds = [worldIdx];
     pausebtnEl.innerHTML = '&#10074;&#10074;';
     cat1.x = mouse.x; cat1.y = mouse.y; cat1.trail = [];
     cat2.x = W - mouse.x; cat2.y = H - mouse.y; cat2.trail = [];
@@ -913,7 +1732,12 @@ function startGame(mode) {
     scoreEl.textContent = '0';
     multiEl.textContent = '';
     updateLives(); // colored spans, not bare glyphs — always visible
-    levelEl.textContent = 'LEVEL 1';
+    updateLevelHUD();
+    if (worldIdx > 0) {
+        setTimeout(function() {
+            if (state === 'playing') banner(WORLDS[worldIdx].name, WORLDS[worldIdx].color);
+        }, 400);
+    }
     comboEl.className = ''; combobarEl.className = '';
     pausedTag.className = '';
     startOverlay.className = 'overlay';
@@ -942,6 +1766,7 @@ function loseLife(x, y, cat, cause) {
         return;
     }
     lives--;
+    lostLife = true;
     combo = 0; comboTimer = 0;
     comboEl.className = ''; combobarEl.className = '';
     updateLives();
@@ -989,8 +1814,19 @@ function rankFor(sc) {
 function endGame(title) {
     state = 'dead';
     sfxOver();
-    document.getElementById('goTitle').textContent = title || 'GAME OVER';
-    document.getElementById('fsLabel').textContent = gameMode === 'sprint' ? 'SPRINT SCORE' : 'SCORE';
+    // daily ranked run: record it, feed the streak, arm the share button
+    var wasDaily = gameMode === 'daily';
+    if (wasDaily) {
+        dailyRec = { date: todayStr(), n: dayNum(), score: score, level: level, combo: bestCombo, worlds: runWorlds.slice() };
+        saveDaily();
+        bumpStreak();
+        refreshDailyUI();
+    }
+    if (gameMode === 'sprint' && score >= 150) unlockAch('sprint');
+    document.getElementById('shareBtn').style.display = wasDaily ? '' : 'none';
+    document.getElementById('goTitle').textContent = title || (wasDaily ? 'DAILY #' + dayNum() + ' DONE' : 'GAME OVER');
+    document.getElementById('fsLabel').textContent = gameMode === 'sprint' ? 'SPRINT SCORE'
+        : wasDaily ? 'DAILY SCORE' : 'SCORE';
     timerEl.textContent = '';
     var hi = gameMode === 'sprint' ? hiscoreSprint : hiscore;
     var isRecord = score > hi;
@@ -1059,6 +1895,23 @@ function eat(cat, d, mult) {
     var pts = (mult || 1) * comboMult * (doubler > 0 ? 2 : 1);
     score += pts;
     scoreEl.textContent = score;
+    // ---- feats ----
+    unlockAch('bite');
+    if (combo >= 10) unlockAch('x10');
+    if (combo >= 20) unlockAch('x20');
+    if (worldIdx === 5 && combo >= 8) unlockAch('ice8');
+    if (score >= 100) unlockAch('c100');
+    if (score >= 300) unlockAch('c300');
+    if (worldIdx === 1) {
+        lifeStats.moths++; saveStats();
+        if (lifeStats.moths >= 100) unlockAch('moths');
+        if (magnet > 0) unlockAch('tamer');
+    } else if (worldIdx === 4) {
+        lifeStats.mbox++; saveStats();
+        if (lifeStats.mbox >= 50) unlockAch('dj');
+    }
+    if (d.captured) unlockAch('moon');
+    if (frenzy > 0) { frenzyEats++; if (frenzyEats >= 15) unlockAch('feast'); }
     scoreEl.className = 'pop';
     setTimeout(function(){ scoreEl.className = ''; }, 110);
     if (combo >= 3) {
@@ -1092,6 +1945,8 @@ function eat(cat, d, mult) {
         score += bonus;
         scoreEl.textContent = score;
         beamTimer = 40;
+        syncRun++;
+        if (syncRun >= 5) unlockAch('sync5');
         sfxMirror();
         floater((cat1.x + cat2.x) / 2, (cat1.y + cat2.y) / 2, 'MIRROR SYNC +' + bonus, '#00f6ff');
         burst((cat1.x + cat2.x) / 2, (cat1.y + cat2.y) / 2, '#00f6ff', 20, 6);
@@ -1110,7 +1965,11 @@ function eat(cat, d, mult) {
     var newLevel = 1 + Math.floor(eaten / 15);
     if (newLevel > level) {
         level = newLevel;
-        levelEl.textContent = 'LEVEL ' + level;
+        updateLevelHUD();
+        // journey: travel to the next world every 2 levels
+        var wNew = (runStartWorld + Math.floor((level - 1) / 2)) % WORLDS.length;
+        if (wNew !== worldIdx) travelToWorld(wNew);
+        if (level >= 5 && !lostLife) unlockAch('nolife');
         sfxLevel();
         flash = 0.35; flashColor = '88,255,177';
         banner('LEVEL ' + level, '#58ffb1');
@@ -1161,6 +2020,7 @@ function grabPowerup(d, x, y) {
         floater(x, y, '2X POINTS!', '#ffd23f');
     } else if (d.type === 'frenzy') {
         frenzy = 480;
+        frenzyEats = 0; // FRENZY FEAST counts per activation
         sfxFrenzy();
         burst(x, y, '#ff4fd8', 30, 8);
         burst(x, y, '#00f6ff', 20, 6);
@@ -1176,6 +2036,7 @@ function grabPowerup(d, x, y) {
 
 // ============================== DRAWING ==============================
 function drawBackground() {
+    var wld = WORLDS[worldIdx];
     if (frenzy > 0 && !isTouch) {
         var g = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.7);
         var hue = (frame * 3) % 360;
@@ -1183,10 +2044,45 @@ function drawBackground() {
         g.addColorStop(0.6, '#0a0520');
         g.addColorStop(1, '#04010d');
         ctx.fillStyle = g;
+    } else if (wld.sky) {
+        if (!wld.grad || wld.gradH !== H) { // build + cache the world sky
+            wld.grad = ctx.createLinearGradient(0, 0, 0, H);
+            wld.grad.addColorStop(0, wld.sky[0]);
+            wld.grad.addColorStop(0.6, wld.sky[1]);
+            wld.grad.addColorStop(1, wld.sky[2]);
+            wld.gradH = H;
+        }
+        ctx.fillStyle = wld.grad;
     } else {
         ctx.fillStyle = bgGrad;
     }
     ctx.fillRect(0, 0, W, H);
+    if (wld.draw) {
+        if (frenzy > 0 && isTouch) { // cheap frenzy tint (see note below)
+            ctx.fillStyle = 'hsla(' + ((frame * 3) % 360) + ',70%,45%,0.10)';
+            ctx.fillRect(0, 0, W, H);
+        }
+        // stars still twinkle behind the open-sky worlds
+        if (worldIdx === 1 || worldIdx === 3) {
+            for (var si2 = 0; si2 < stars.length; si2++) {
+                var st2 = stars[si2];
+                var a2 = 0.35 + 0.5 * Math.abs(Math.sin(st2.tw + frame * 0.02 * st2.z));
+                ctx.fillStyle = 'rgba(180,200,255,' + a2 * st2.z + ')';
+                ctx.fillRect(st2.x * W, st2.y * H, st2.z * 2, st2.z * 2);
+            }
+        }
+        wld.draw();
+        // mirror axis stays in every world — it IS the game
+        ctx.save();
+        ctx.setLineDash([6, 10]);
+        ctx.strokeStyle = 'rgba(255,79,216,0.07)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, H); ctx.lineTo(W, 0);
+        ctx.stroke();
+        ctx.restore();
+        return;
+    }
     // mobile can't afford the per-frame gradient above, but frenzy still has
     // to transform the whole canvas: flat hue-cycling tint is nearly free
     if (frenzy > 0 && isTouch) {
@@ -1502,15 +2398,20 @@ function drawDot(d) {
         ctx.globalAlpha = alpha;
         ctx.shadowColor = fc;
         ctx.shadowBlur = 20 * FXQ;
-        ctx.fillStyle = fc;
-        ctx.beginPath();
-        ctx.arc(0, 0, d.r * pulse, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = 'rgba(255,255,255,0.6)';
-        ctx.beginPath();
-        ctx.arc(-d.r * 0.3, -d.r * 0.3, d.r * 0.28, 0, Math.PI * 2);
-        ctx.fill();
+        if (worldIdx > 0) { // themed snack, same halo + glow + tint system
+            drawWorldFood(d, fc);
+            ctx.shadowBlur = 0;
+        } else {
+            ctx.fillStyle = fc;
+            ctx.beginPath();
+            ctx.arc(0, 0, d.r * pulse, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.beginPath();
+            ctx.arc(-d.r * 0.3, -d.r * 0.3, d.r * 0.28, 0, Math.PI * 2);
+            ctx.fill();
+        }
     } else if (d.type === 'bomb') {
         var warn = 0.6 + 0.4 * Math.sin(frame * 0.25);
         // pulsing red danger halo: the hazard must be the loudest object on screen
@@ -1703,14 +2604,31 @@ function tick() {
     if (foodCount < (small ? 4 : 5)) spawnDot();
 
     // --- cats --- (tighter follow on touch so the cat doesn't feel laggy)
-    var lf = isTouch ? 0.28 : 0.16;
     var ox1 = cat1.x, oy1 = cat1.y, ox2 = cat2.x, oy2 = cat2.y;
-    cat1.x = lerp(cat1.x, mouse.x, lf);
-    cat1.y = lerp(cat1.y, mouse.y, lf);
-    cat2.x = lerp(cat2.x, W - mouse.x, lf);
-    cat2.y = lerp(cat2.y, H - mouse.y, lf);
+    if (worldIdx === 5) {
+        // CANDY GLACIER: slippery paws — momentum steering, heavy damping so
+        // you drift and overshoot without orbiting the pointer
+        cat1.x += (cat1.ivx = (cat1.ivx || 0) * 0.86 + (mouse.x - cat1.x) * 0.02);
+        cat1.y += (cat1.ivy = (cat1.ivy || 0) * 0.86 + (mouse.y - cat1.y) * 0.02);
+        cat2.x = W - cat1.x; cat2.y = H - cat1.y;
+    } else {
+        cat1.ivx = cat1.ivy = 0;
+        var lf = isTouch ? 0.28 : 0.16;
+        cat1.x = lerp(cat1.x, mouse.x, lf);
+        cat1.y = lerp(cat1.y, mouse.y, lf);
+        cat2.x = lerp(cat2.x, W - mouse.x, lf);
+        cat2.y = lerp(cat2.y, H - mouse.y, lf);
+    }
     cat1.vx = cat1.x - ox1; cat1.vy = cat1.y - oy1;
     cat2.vx = cat2.x - ox2; cat2.vy = cat2.y - oy2;
+    // glacier: both cats carve fading skate trails
+    if (worldIdx === 5) {
+        [cat1, cat2].forEach(function(c) {
+            if (Math.abs(c.vx) + Math.abs(c.vy) > 1.6 && iceTrails.length < 500) {
+                iceTrails.push({ x: c.x, y: c.y + CATR * 0.7, life: 1, color: c.glow });
+            }
+        });
+    }
 
     [cat1, cat2].forEach(function(cat) {
         cat.trail.push({ x: cat.x, y: cat.y });
@@ -1722,22 +2640,45 @@ function tick() {
     });
 
     // --- dots update + collisions ---
+    // glacier: treats knock into each other like billiard candies
+    if (worldIdx === 5) {
+        for (var ba = 0; ba < dots.length; ba++) {
+            if (dots[ba].type !== 'food') continue;
+            for (var bb = ba + 1; bb < dots.length; bb++) {
+                if (dots[bb].type !== 'food') continue;
+                var fa = dots[ba], fb = dots[bb];
+                var cdx = fb.x - fa.x, cdy = fb.y - fa.y, cd2 = cdx * cdx + cdy * cdy;
+                if (cd2 < 484 && cd2 > 0) {
+                    var tv = fa.vx; fa.vx = fb.vx; fb.vx = tv;
+                    tv = fa.vy; fa.vy = fb.vy; fb.vy = tv;
+                    var cdl = Math.sqrt(cd2);
+                    fa.x -= cdx / cdl * 3; fb.x += cdx / cdl * 3;
+                    beep(rand(900, 1400), .05, 'sine', .025);
+                }
+            }
+        }
+    }
     var alive = [];
     for (var i = 0; i < dots.length; i++) {
         var d = dots[i];
         d.r = lerp(d.r, d.targetR, 0.12);
 
         // magnet pull: gold food to gold cat, silver food to mirror cat
+        // (strong enough to tame fleeing moths and yank food off rails)
         if (magnet > 0 && d.type === 'food') {
             var mc = d.color === GOLD ? cat1 : cat2;
             var mdx = mc.x - d.x, mdy = mc.y - d.y;
             var mdist = Math.sqrt(mdx * mdx + mdy * mdy) || 1;
             if (mdist < 260) {
+                delete d.orbit; delete d.disc; delete d.flee;
                 var pull = (1 - mdist / 260) * 0.35;
                 d.vx += (mdx / mdist) * pull;
                 d.vy += (mdy / mdist) * pull;
             }
         }
+
+        // world physics: flee / wake / orbit / disc
+        if (d.type === 'food') worldFoodTick(d);
 
         // seeker bombs drift toward the nearest cat (speed-capped so they stay dodgeable)
         if (d.homing) {
@@ -1753,17 +2694,21 @@ function tick() {
             if (hv > hmax) { d.vx *= hmax / hv; d.vy *= hmax / hv; }
         }
 
-        d.x += d.vx * timeScale;
-        d.y += d.vy * timeScale;
-        // dampen pulse knockback
-        d.vx *= 0.985; d.vy *= 0.985;
-        if (d.x < 20 || d.x > W - 20) { d.vx *= -1; d.x = Math.max(20, Math.min(W - 20, d.x)); }
-        if (d.y < 70 || d.y > H - 20) { d.vy *= -1; d.y = Math.max(70, Math.min(H - 20, d.y)); }
+        if (!d.orbit && !d.disc) { // rail-riding food positions itself
+            d.x += d.vx * timeScale;
+            d.y += d.vy * timeScale;
+            // dampen pulse knockback (glacier ice barely slows anything)
+            var damp = d.slide ? 0.999 : 0.985;
+            d.vx *= damp; d.vy *= damp;
+            if (d.x < 20 || d.x > W - 20) { d.vx *= -1; d.x = Math.max(20, Math.min(W - 20, d.x)); }
+            if (d.y < 70 || d.y > H - 20) { d.vy *= -1; d.y = Math.max(70, Math.min(H - 20, d.y)); }
+        }
 
         // expire
         if (frame - d.born > d.life) {
             if (d.type === 'bomb') {
                 bombsDodged++;
+                if (bombsDodged >= 10) unlockAch('dodge');
                 burst(d.x, d.y, '#ff3355', 12, 4);
             } else {
                 burst(d.x, d.y, 'rgba(140,140,180,1)', 6, 2.5);
@@ -1779,17 +2724,21 @@ function tick() {
             // pickup forgiveness on goodies; hazard hitbox unchanged
             var er = CATR + (d.type === 'bomb' ? 10 : 14);
             var dq = dx * dx + dy * dy;
-            // magnet-lite: matching food inside ~1.6x eat radius drifts to the cat
-            if (d.type === 'food' && (frenzy > 0 || cat.color === d.color) &&
-                dq >= er * er && dq < er * er * 2.56) {
+            // core rule: food gravitates to the cat of ITS color (~2.3x eat
+            // radius). Moths are exempt — their job is to be hunted.
+            if (d.type === 'food' && !d.flee && (frenzy > 0 || cat.color === d.color) &&
+                dq >= er * er && dq < er * er * 5.3) {
                 var pd = Math.sqrt(dq);
-                d.x += (dx / pd) * 1.1 * timeScale;
-                d.y += (dy / pd) * 1.1 * timeScale;
+                var pullv = 0.5 + (1 - pd / (er * 2.3)) * 1.6;
+                delete d.orbit; delete d.disc; // attraction wins over rails
+                d.x += (dx / pd) * pullv * timeScale;
+                d.y += (dy / pd) * pullv * timeScale;
             }
             // GRAZE: skim past a bomb without touching it -> risky-play reward
             if (d.type === 'bomb' && !d.grazed && dq >= er * er && dq < (er + 26) * (er + 26)) {
                 d.grazed = true;
                 grazes++;
+                if (grazes >= 5) unlockAch('graze5');
                 var gpts = 2 * (doubler > 0 ? 2 : 1);
                 score += gpts;
                 scoreEl.textContent = score;
@@ -1917,6 +2866,17 @@ function render() {
         ctx.stroke();
         ctx.restore();
     }
+
+    // glacier skate trails, carved under everything that moves
+    for (var ti = iceTrails.length - 1; ti >= 0; ti--) {
+        var tr = iceTrails[ti];
+        tr.life -= 0.012;
+        if (tr.life <= 0) { iceTrails.splice(ti, 1); continue; }
+        ctx.globalAlpha = tr.life * 0.3;
+        ctx.fillStyle = tr.color;
+        ctx.beginPath(); ctx.arc(tr.x, tr.y, 2.2, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
 
     dots.forEach(drawDot);
 
@@ -2097,6 +3057,12 @@ function selectChar(i) {
 }
 charCards.forEach(function(el, i) { el.onclick = function() { selectChar(i); }; });
 selectChar(selChar);
+buildWorldRow();
+refreshDailyUI();
+document.getElementById('featsBtn').innerHTML = SVG_TROPHY + 'FEATS';
+document.getElementById('achOverlay').addEventListener('mousedown', function(e) {
+    if (e.target === document.getElementById('achOverlay')) toggleAch(false);
+});
 
 function toggleInfo(on) {
     infoOverlay.className = on ? 'overlay show' : 'overlay';
@@ -2117,6 +3083,9 @@ function quitToMenu() {
     pausebtnEl.innerHTML = '&#10074;&#10074;';
     hiscoreEl.textContent = hiscore;
     refreshMenuBest();
+    worldIdx = startWorld; amb = []; iceTrails = []; // menu previews the chosen world
+    buildWorldRow(); // fresh unlocks from this run
+    refreshDailyUI();
     startOverlay.className = 'overlay show';
     requestAnimationFrame(menuLoop);
 }
